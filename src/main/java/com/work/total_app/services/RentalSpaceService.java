@@ -1,14 +1,12 @@
 package com.work.total_app.services;
 
-import com.work.total_app.models.building.Building;
-import com.work.total_app.models.building.BuildingLocation;
-import com.work.total_app.models.building.RentalSpace;
-import com.work.total_app.models.building.RentalSpaceFilter;
+import com.work.total_app.models.building.*;
 import com.work.total_app.models.reading.IndexCounter;
 import com.work.total_app.models.reading.IndexCounterFilter;
 import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
 import com.work.total_app.repositories.BuildingRepository;
+import com.work.total_app.repositories.LocationRepository;
 import com.work.total_app.repositories.RentalSpaceRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,9 @@ public class RentalSpaceService {
 
     @Autowired
     private RentalSpaceRepository spaceRepository;
+
+    @Autowired
+    private LocationRepository locationRepository;
 
     public RentalSpace getSpace(String bid, String sid) {
         RentalSpace rs = spaceRepository.findById(sid).orElseThrow(
@@ -45,37 +46,39 @@ public class RentalSpaceService {
         return rs;
     }
 
-    public RentalSpace addSpace(String bid, RentalSpace rentalSpace) {
+    public Room addSpace(String bid, Room room) {
 
-        if (rentalSpace == null)
+        if (room == null)
         {
             throw new RuntimeException("Missing rental space object");
         }
 
         if (bid != null)
         {
-            if (rentalSpace.getBuilding() == null)
+            if (room.getBuilding() == null)
             {
                 Building b = buildingRepository.findById(bid).orElseThrow(() ->
-                        new NotFoundException("No building found with this id when creating new rental space."));
-                rentalSpace.setBuilding(b);
+                        new NotFoundException("No building found with this id when adding new space."));
+                room.setBuilding(b);
             }
             else {
-                if (!rentalSpace.getBuilding().getId().equals(bid))
+                if (!room.getBuilding().getId().equals(bid))
                 {
                     throw new ValidationException("mismatched building ids in rental space obj and in path");
                 }
             }
 
-            return spaceRepository.save(rentalSpace);
+            room.getBuilding().addRoom(room);
+            return locationRepository.save(room);
         }
 
-        if (rentalSpace.getBuilding() == null || rentalSpace.getBuilding().getId() == null)
+        if (room.getBuilding() == null || room.getBuilding().getId() == null)
         {
             throw new ValidationException("no building id for given space");
         }
 
-        return spaceRepository.save(rentalSpace);
+        room.getBuilding().addRoom(room);
+        return locationRepository.save(room);
     }
 
     public List<RentalSpace> listAll(BuildingLocation buildingLocation, Boolean groundLevel, Boolean empty) {

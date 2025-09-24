@@ -2,9 +2,7 @@ package com.work.total_app.controllers;
 
 import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.BuildingLocation;
-import com.work.total_app.models.reading.CounterType;
-import com.work.total_app.models.reading.IndexCounter;
-import com.work.total_app.models.reading.IndexCounterLocationType;
+import com.work.total_app.models.reading.*;
 import com.work.total_app.services.IndexCounterService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +23,7 @@ public class IndexCounterController {
     @GetMapping
     public List<IndexCounter> listCounters(@RequestParam CounterType type,
                                            @RequestParam String locationId,
-                                           @RequestParam IndexCounterLocationType locationType,
+                                           @RequestParam LocationType locationType,
                                            @RequestParam BuildingLocation buildingLocation)
     {
         return counterService.getCounters(type, locationId, locationType, buildingLocation);
@@ -37,5 +35,15 @@ public class IndexCounterController {
         return counterService.getCounter(id);
     }
 
+    @PostMapping
+    public IndexCounter addCounter(@RequestBody IndexCounterDto icd)
+    {
+        return counterService.saveCounter(icd);
+    }
 
+    @PostMapping("/data")
+    public IndexData addData(@RequestBody IndexDataDto iData)
+    {
+        return counterService.addData(iData);
+    }
 }

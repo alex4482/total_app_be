@@ -29,11 +29,6 @@ public class IndexData {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "counter_id")
     private IndexCounter counter;
-
-    // optional: link to a rental record if you want to snapshot readings there too
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_rental_data_id")
-    private TenantRentalData rentalData;
 }
 
 

@@ -4,6 +4,7 @@ import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.Building;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
+import com.work.total_app.models.building.Room;
 import com.work.total_app.services.BuildingService;
 import com.work.total_app.services.RentalSpaceService;
 import lombok.extern.log4j.Log4j2;
@@ -84,10 +85,8 @@ public class BuildingController {
     }
 
     @PostMapping({"/spaces", "/{bid}/spaces"})
-    public RentalSpace addSpace(@PathVariable String bid, @RequestBody RentalSpace rentalSpace)
+    public Room addSpace(@PathVariable String bid, @RequestBody Room newSpace)
     {
-        return spaceService.addSpace(bid, rentalSpace);
+        return spaceService.addSpace(bid, newSpace);
     }
-
-
 }
