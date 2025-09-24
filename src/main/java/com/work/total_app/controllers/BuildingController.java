@@ -2,6 +2,7 @@ package com.work.total_app.controllers;
 
 import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.Building;
+import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.services.BuildingService;
 import com.work.total_app.services.RentalSpaceService;
@@ -25,15 +26,43 @@ public class BuildingController {
     private RentalSpaceService spaceService;
 
     @GetMapping
-    public List<Building> listBuildings()
+    public List<Building> listBuildings(@RequestParam BuildingLocation buildingLocation)
     {
-        return buildingService.listAll();
+        return buildingService.listAll(buildingLocation);
     }
 
-    @GetMapping({"/spaces", "/{bid}/spaces"})
-    public List<RentalSpace> listSpaces(@PathVariable String bid)
+    @GetMapping("/{bid}/spaces")
+    public List<RentalSpace> listSpacesFromBuilding(@PathVariable String bid,
+                                                    @RequestParam Boolean groundLevel,
+                                                    @RequestParam Boolean empty)
     {
-        return spaceService.listAll(bid);
+        return spaceService.listAllFromBuilding(bid, groundLevel, empty);
+    }
+
+    @GetMapping("/spaces")
+    public List<RentalSpace> listSpaces(@RequestParam BuildingLocation buildingLocation,
+                                        @RequestParam Boolean groundLevel,
+                                        @RequestParam Boolean empty)
+    {
+        return spaceService.listAll(buildingLocation, groundLevel, empty);
+    }
+
+    @GetMapping("{bid}/spaces/{tid}")
+    public List<RentalSpace> listSpacesInBuildingRentedByTenant(
+            @PathVariable String buildingId,
+            @PathVariable String tenantId,
+            @RequestParam BuildingLocation buildingLocation,
+            @RequestParam Boolean groundLevel)
+    {
+        return spaceService.listAllByTenant(buildingId, tenantId, buildingLocation, groundLevel);
+    }
+
+    @GetMapping("/spaces/{tid}")
+    public List<RentalSpace> listSpacesRentedByTenant(@PathVariable String tenantId,
+                                        @RequestParam BuildingLocation buildingLocation,
+                                        @RequestParam Boolean groundLevel)
+    {
+        return spaceService.listAllByTenant(null, tenantId, buildingLocation, groundLevel);
     }
 
     @GetMapping("/{bid}")

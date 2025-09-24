@@ -1,9 +1,7 @@
 package com.work.total_app.models.reading;
 
 import com.work.total_app.models.building.BuildingLocation;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,18 +19,24 @@ public class IndexCounter {
     private Long id;
     private String name;
     private String locationId;
+
+    @Enumerated(EnumType.STRING)
     private CounterType counterType;
+
+    @Enumerated(EnumType.STRING)
     private IndexCounterLocationType locationType;
+
+    @Enumerated(EnumType.STRING)
     private BuildingLocation buildingLocation;
+
+    @OneToMany(mappedBy = "counter", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<IndexData> indexData = new ArrayList<>();
+
 
     public static Specification<IndexCounter> byFilter(IndexCounterFilter f) {
         return (root, q, cb) -> {
             List<Predicate> p = new ArrayList<>();
 
-            if (f.name() != null && !f.name().isBlank()) {
-                p.add(cb.like(cb.lower(root.get("name")),
-                        "%" + f.name().trim().toLowerCase() + "%"));
-            }
             if (f.locationId() != null && !f.locationId().isBlank()) {
                 p.add(cb.equal(root.get("locationId"), f.locationId().trim()));
             }

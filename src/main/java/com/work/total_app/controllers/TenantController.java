@@ -1,6 +1,7 @@
 package com.work.total_app.controllers;
 
 import com.work.total_app.constants.AuthenticationConstants;
+import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.runtime_errors.ValidationException;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.models.tenant.TenantRentalData;
@@ -29,23 +30,18 @@ public class TenantController {
     private TenantRentalService tenantRentalService;
 
     @GetMapping
-    public ResponseEntity<List<Tenant>> listTenants(@RequestParam Boolean isActive)
+    public ResponseEntity<List<Tenant>> listTenants(@RequestParam Boolean isActive,
+                                                    @RequestParam BuildingLocation buildingLocation,
+                                                    @RequestParam String buildingId,
+                                                    @RequestParam Boolean groundLevel)
     {
-        try
+        List<Tenant> TenantList = tenantService.getTenants(isActive, buildingLocation, buildingId, groundLevel);
+        HttpStatus status = HttpStatus.OK;
+        if (TenantList.isEmpty())
         {
-            List<Tenant> TenantList = tenantService.getTenants(isActive);
-            HttpStatus status = HttpStatus.OK;
-            if (TenantList.isEmpty())
-            {
-                status = HttpStatus.NO_CONTENT;
-            }
-            return new ResponseEntity<>(TenantList, status);
+            status = HttpStatus.NO_CONTENT;
         }
-        catch (Exception e)
-        {
-            // TODO: log e
-            throw e;
-        }
+        return new ResponseEntity<>(TenantList, status);
     }
 
     @GetMapping("/{id}")
