@@ -24,7 +24,7 @@ jobs:
 
       - name: Build BE image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/total_app_be:latest
+          IMAGE=ghcr.io/alex4482/total_app_be:latest
           docker build -t "$IMAGE" -f Dockerfile .
           docker push "$IMAGE"
 
