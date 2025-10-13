@@ -40,7 +40,7 @@ public class TenantRentalService {
                 () -> new NotFoundException("Cant find rental space with id: " + dto.rentalSpaceId() + " for new rent start."));
         trd.setRentalSpace(rs);
 
-        if (rs.getOccupant() != null)
+        if (rs.getRentalAgreement() != null)
         {
             throw new ValidationException("Rental space should already be occupied.");
         }
@@ -55,7 +55,9 @@ public class TenantRentalService {
         }
 
         t.addRentalData(trd);
-        rs.setOccupant(t);
+        rs.setRentalAgreement(trd);
+        rentalSpaceRepository.save(rs);
+        tenantRepository.save(t);
 
         return trd;
     }

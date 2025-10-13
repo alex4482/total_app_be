@@ -8,6 +8,7 @@ import com.work.total_app.models.tenant.TenantRentalData;
 import com.work.total_app.models.tenant.TenantRentalDto;
 import com.work.total_app.services.TenantRentalService;
 import com.work.total_app.services.TenantService;
+import jakarta.annotation.Nullable;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,7 +20,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/tenants")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class TenantController {
 
@@ -30,18 +30,18 @@ public class TenantController {
     private TenantRentalService tenantRentalService;
 
     @GetMapping
-    public ResponseEntity<List<Tenant>> listTenants(@RequestParam Boolean isActive,
-                                                    @RequestParam BuildingLocation buildingLocation,
-                                                    @RequestParam String buildingId,
-                                                    @RequestParam Boolean groundLevel)
+    public ResponseEntity<List<Tenant>> listTenants(@Nullable @RequestParam Boolean active,
+                                                    @Nullable@RequestParam BuildingLocation buildingLocation,
+                                                    @Nullable@RequestParam String buildingId,
+                                                    @Nullable@RequestParam Boolean groundLevel)
     {
-        List<Tenant> TenantList = tenantService.getTenants(isActive, buildingLocation, buildingId, groundLevel);
+        List<Tenant> tenantList = tenantService.getTenants(active, buildingLocation, buildingId, groundLevel);
         HttpStatus status = HttpStatus.OK;
-        if (TenantList.isEmpty())
+        if (tenantList.isEmpty())
         {
             status = HttpStatus.NO_CONTENT;
         }
-        return new ResponseEntity<>(TenantList, status);
+        return new ResponseEntity<>(tenantList, status);
     }
 
     @GetMapping("/{id}")
@@ -60,15 +60,15 @@ public class TenantController {
     }
 
     @PostMapping
-    public ResponseEntity<Tenant> addTenant(@RequestBody Tenant Tenant)
+    public ResponseEntity<Tenant> addTenant(@RequestBody Tenant tenant)
     {
-        if (Tenant == null)
+        if (tenant == null)
         {
             throw new ValidationException("Body is null when creating new tenant");
         }
 
         try {
-            Tenant t = tenantService.addTenant(Tenant);
+            Tenant t = tenantService.addTenant(tenant);
             if (t == null)
             {
                 return ResponseEntity.internalServerError().build();

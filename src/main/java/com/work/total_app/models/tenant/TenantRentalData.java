@@ -1,5 +1,6 @@
 package com.work.total_app.models.tenant;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.models.reading.IndexData;
 import jakarta.persistence.*;
@@ -22,11 +23,12 @@ public class TenantRentalData {
     // MANY rental data entries belong to ONE tenant
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
+    @JsonBackReference("tenant-rental")
     private Tenant tenant;
 
     // ONE rental data entry is about ONE rental space
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rental_space_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JsonBackReference("rental-agreement")
     private RentalSpace rentalSpace;
 
     @Temporal(TemporalType.DATE)

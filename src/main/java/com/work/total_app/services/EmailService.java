@@ -18,11 +18,11 @@ public class EmailService {
     @Autowired
     private EmailFileKeywordPairRepository repository;
 
-    public List<EmailFileKeywordPair> getInvoicePresets() {
+    public List<EmailPreset> getInvoicePresets() {
         return repository.findAll();
     }
 
-    public List<EmailFileKeywordPair> saveInvoicePresets(List<EmailFileKeywordPair> presets) {
+    public List<EmailPreset> saveInvoicePresets(List<EmailPreset> presets) {
         repository.deleteAll();
         return repository.saveAll(presets);
     }

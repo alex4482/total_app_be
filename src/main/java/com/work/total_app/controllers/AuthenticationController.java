@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 @RequestMapping("/auth")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class AuthenticationController {
 

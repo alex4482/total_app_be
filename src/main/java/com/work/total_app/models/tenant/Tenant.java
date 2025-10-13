@@ -1,5 +1,6 @@
 package com.work.total_app.models.tenant;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.work.total_app.models.Observation;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.models.building.RentalSpaceFilter;
@@ -34,6 +35,7 @@ public class Tenant {
 
     // Tenant ↔ TenantRentalData
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("tenant-rental")
     private List<TenantRentalData> rentalData;
 
     public void addRentalData(TenantRentalData rd) {

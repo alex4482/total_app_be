@@ -8,9 +8,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-public class EmailFileKeywordPair {
+public class EmailPreset {
     @Id
     private Long id;
+    private String name;
     private String subject;
     private String message;
     private String[] recipients;

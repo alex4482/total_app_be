@@ -11,6 +11,7 @@ import org.simplejavamail.email.EmailBuilder;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -25,7 +26,7 @@ public class EmailHelper {
 
     public EEmailSendStatus createAndSendMail(EmailData data) {
 
-        String subject = data.getTitle();
+        String subject = data.getSubject();
         String fromEmail = PropertiesHelper.getProp(fromEmailKey);
         String fromPassword = PropertiesHelper.getProp(fromEmailPasswordKey);
 
@@ -34,21 +35,23 @@ public class EmailHelper {
 
         EmailPopulatingBuilder emailBuilder = EmailBuilder.startingBlank()
                 .from(fromEmail)
-                .to(Arrays.toString(data.getDestinationAddresses()))
+                .to(Arrays.toString(data.getRecipients()))
                 .withSubject(subject)
                 .withPlainText(data.getMessage());
-        if (data.getAttachedFiles() != null && data.getAttachedFiles().length > 0)
+        if (data.getAttachedFilesIds() != null && data.getAttachedFilesIds().length > 0)
         {
             try
             {
                 String fileName;
                 String fileType;
                 byte[] content;
-                for (int i = 0; i < data.getAttachedFiles().length; i++)
+                File f;
+                for (int i = 0; i < data.getAttachedFilesIds().length; i++)
                 {
-                    fileName = data.getAttachedFiles()[i].getOriginalFilename();
-                    content = data.getAttachedFiles()[i].getBytes();
-                    fileType = data.getAttachedFiles()[i].getContentType();
+                    f = null;
+                    fileName = f.getOriginalFilename();
+                    content = f.getBytes();
+                    fileType = f.getContentType();
                     emailBuilder = emailBuilder.withAttachment(fileName, content, fileType);
                 }
             }

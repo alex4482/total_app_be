@@ -7,6 +7,6 @@ import java.util.List;
 
 @Setter
 @Getter
-public class EmailFileKeywordsDto {
-    private List<EmailFileKeywordPair> presets;
+public class EmailPresetsDto {
+    private List<EmailPreset> presets;
 }

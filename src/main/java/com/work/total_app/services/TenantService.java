@@ -3,6 +3,7 @@ package com.work.total_app.services;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.models.building.RentalSpaceFilter;
+import com.work.total_app.models.runtime_errors.ValidationException;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.repositories.RentalSpaceRepository;
 import com.work.total_app.repositories.TenantRentalDataRepository;
@@ -26,9 +27,17 @@ public class TenantService {
     private RentalSpaceRepository spaceRepository;
 
     public Tenant addTenant(Tenant tenant) {
+        if (tenant.getId() != null)
+        {
+            return tenantRepository.save(tenant);
+        }
+
         tenant.setId(tenant.getName().toLowerCase(Locale.ROOT).replace(' ', '-'));
-        Tenant t = tenantRepository.save(tenant);
-        return t;
+        if (tenantRepository.existsById(tenant.getId()))
+        {
+            throw new ValidationException("Tenant with id " + tenant.getId() + " already exists");
+        }
+        return tenantRepository.save(tenant);
     }
 
     public void deleteTenant(String id) {
@@ -53,7 +62,7 @@ public class TenantService {
         {
             RentalSpaceFilter f = new RentalSpaceFilter(buildingId, buildingLocation, groundLevel, false, null);
             return spaceRepository.findAll(RentalSpace.byFilter(f))
-                    .stream().map(RentalSpace::getOccupant).toList();
+                    .stream().map(r -> r.getRentalAgreement().getTenant()).toList();
         }
 
         if (isActive != null)

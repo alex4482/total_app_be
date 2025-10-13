@@ -2,6 +2,7 @@ package com.work.total_app.models.building;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.work.total_app.models.tenant.Tenant;
+import com.work.total_app.models.tenant.TenantRentalData;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
@@ -17,11 +18,9 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "name")
 public class RentalSpace extends Room {
 
-    // rental space → TENANT (owning side)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "tenant_id")
-    @JsonManagedReference
-    private Tenant occupant;
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JsonManagedReference("rental-agreement")
+    private TenantRentalData rentalAgreement;
 
     public static Specification<RentalSpace> byFilter(RentalSpaceFilter f) {
         return (root, q, cb) -> {

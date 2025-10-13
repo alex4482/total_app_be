@@ -18,7 +18,7 @@ import java.util.List;
 public class RequestsAuthInterceptor extends OncePerRequestFilter {
         private final List<TokenVerifier> authenticators;
         private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
-        private final List<String> allowed = List.of("/auth/login", "/auth/refresh");
+        private final List<String> allowed = List.of("/auth/login", "/auth/refresh-token");
 
         public RequestsAuthInterceptor(List<TokenVerifier> authenticators) {
             this.authenticators = authenticators;
