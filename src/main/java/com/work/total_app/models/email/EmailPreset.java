@@ -11,6 +11,8 @@ import lombok.Setter;
 public class EmailFileKeywordPair {
     @Id
     private Long id;
-    private String address;
-    private String fileKeyword;
+    private String subject;
+    private String message;
+    private String[] recipients;
+    private String[] keywords;
 }
