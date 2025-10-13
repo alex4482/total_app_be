@@ -1,0 +1,45 @@
+name: BE CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build BE image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/total_app_be:latest
+          docker build -t "$IMAGE" -f Dockerfile .
+          docker push "$IMAGE"
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          if [ -n "${{ secrets.SSH_KNOWN_HOSTS }}" ]; then
+            echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          fi
+
+      - name: Deploy on server (docker compose pull api)
+        run: |
+          SSH_OPTS="-o StrictHostKeyChecking=no"
+          if [ -f ~/.ssh/known_hosts ]; then SSH_OPTS=""; fi
+          ssh -i ~/.ssh/id_rsa $SSH_OPTS ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            'cd /srv/app && docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} && docker compose pull api && docker compose up -d api'
