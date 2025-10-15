@@ -35,7 +35,10 @@ jobs:
 
       - name: Deploy BE on server
         run: |
-          SSH_OPTS="-o StrictHostKeyChecking=no"; [ -f ~/.ssh/known_hosts ] && SSH_OPTS=""
+          SSH_OPTS="-o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa $SSH_OPTS \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
             'cd /srv/total_app && docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} && docker compose pull api && docker compose up -d api'
