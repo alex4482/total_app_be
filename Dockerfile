@@ -8,8 +8,8 @@ RUN mvn -B -e -DskipTests dependency:go-offline
 
 # Apoi sursele (evită -q ca să vezi eroarea!)
 COPY src ./src
-# Dacă e multi-module, copiază și restul fișierelor necesare (module/pom-uri)
-# COPY <alte foldere de module> <...>
+
+ENV SPRING_PROFILES_ACTIVE=prod
 
 RUN mvn -B -e -DskipTests -Dmaven.resources.encoding=UTF-8 package
 
