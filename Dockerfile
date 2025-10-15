@@ -1,22 +1,20 @@
-# ===== Build =====
+# ===== Build (Maven) =====
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Cache deps
+# Copiem întâi pom.xml pentru cache de dependențe
 COPY pom.xml ./
 RUN mvn -B -e -DskipTests dependency:go-offline
 
-# Surse (dacă e multi-module, copiază tot proiectul)
-COPY . .
-# (opțional) vezi versiunile
-RUN java -version && mvn -version
+# Apoi sursele (evită -q ca să vezi eroarea!)
+COPY src ./src
+# Dacă e multi-module, copiază și restul fișierelor necesare (module/pom-uri)
+# COPY <alte foldere de module> <...>
 
-# dacă ai IT-uri sau teste încă pornesc, forțează skip complet:
-RUN mvn -B -e -DskipTests -DskipITs -Dmaven.test.skip=true package
+RUN mvn -B -e -DskipTests package
 
-# ===== Runtime =====
-# Dacă '18-jre-alpine' nu există în registry-ul tău, folosește '18-jre'
-FROM eclipse-temurin:21-jre
+# ===== Runtime (JRE) =====
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 VOLUME ["/data"]
 COPY --from=build /app/target/*.jar /app/app.jar
