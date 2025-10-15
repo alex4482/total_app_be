@@ -37,8 +37,8 @@ public class SecurityConfig {
         // use originPatterns if you want wildcards
         c.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",          // Vite/React dev
-                "https://fs.totalapp--*.web.app", //staging
-                "https://fs.total-commander.ro"
+                "https://api.donix--*.web.app", //staging
+                "https://api.donix.ro"
         ));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","X-Requested-With"));
