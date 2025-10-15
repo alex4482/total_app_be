@@ -22,7 +22,7 @@ public class EmailController {
     @Autowired
     private EmailService service;
 
-    @PostMapping
+    @PostMapping("/send-emails")
     public List<EmailData> sendEmails(@RequestBody SendEmailsDto dto)
     {
         return service.sendEmails(dto.getData());

@@ -21,9 +21,9 @@ jobs:
 
       - name: Build & push BE image
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner,, }}/total_app_be:latest
+          IMAGE: ghcr.io/${{ github.repository_owner }}/total_app_be:latest
         run: |
-          docker build -t "$IMAGE" -f backend/Dockerfile backend
+          docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
       - name: Setup SSH
