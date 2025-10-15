@@ -11,7 +11,7 @@ COPY src ./src
 # Dacă e multi-module, copiază și restul fișierelor necesare (module/pom-uri)
 # COPY <alte foldere de module> <...>
 
-RUN mvn -B -e -DskipTests package
+RUN mvn -B -e -DskipTests -Dmaven.resources.encoding=UTF-8 package
 
 # ===== Runtime (JRE) =====
 FROM eclipse-temurin:21-jre-alpine
