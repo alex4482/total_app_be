@@ -18,7 +18,7 @@ import java.util.Map;
 public class TenantMetadataProvider implements OwnerMetadataProvider {
     private final TenantService tenantService; // serviciul tău
     @Override public OwnerType supports() { return OwnerType.TENANT; }
-    @Override public Map<String, String> metadataFor(String ownerId) {
+    @Override public Map<String, String> metadataFor(Long ownerId) {
         var t = tenantService.getTenant(ownerId);
         return Map.of("tenantName", t.getName());
     }

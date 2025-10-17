@@ -15,7 +15,7 @@ import java.util.Date;
 public class ReplacedCounterIndexData extends IndexData {
     // One replaced entry refers to exactly one old IndexData,
     // and each old IndexData can be referenced by at most one replacement
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "old_index_data_id", nullable = false, unique = true)
     private IndexData oldIndexData;
     private Double newCounterInitialIndex;

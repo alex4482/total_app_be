@@ -21,13 +21,13 @@ public class TenantRentalData {
     private Long id;
 
     // MANY rental data entries belong to ONE tenant
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
     @JsonBackReference("tenant-rental")
     private Tenant tenant;
 
     // ONE rental data entry is about ONE rental space
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JsonBackReference("rental-agreement")
     private RentalSpace rentalSpace;
 

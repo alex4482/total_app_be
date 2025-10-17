@@ -18,7 +18,7 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "name")
 public class RentalSpace extends Room {
 
-    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @OneToOne(fetch = FetchType.EAGER, optional = true)
     @JsonManagedReference("rental-agreement")
     private TenantRentalData rentalAgreement;
 

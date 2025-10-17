@@ -28,7 +28,7 @@ public class RentalSpaceService {
     @Autowired
     private LocationRepository locationRepository;
 
-    public RentalSpace getSpace(String bid, String sid) {
+    public RentalSpace getSpace(Long bid, Long sid) {
         RentalSpace rs = spaceRepository.findById(sid).orElseThrow(
                 () -> new NotFoundException("Rental space not found by id: " + sid)
         );
@@ -46,7 +46,7 @@ public class RentalSpaceService {
         return rs;
     }
 
-    public Room addSpace(String bid, Room room) {
+    public Room addSpace(Long bid, Room room) {
 
         if (room == null)
         {

@@ -26,7 +26,7 @@ public class IndexData {
     private Date readingDate;
 
     // Each IndexData belongs to one counter
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "counter_id")
     private IndexCounter counter;
 }

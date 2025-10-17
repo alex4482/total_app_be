@@ -13,7 +13,7 @@ import java.util.Map;
 public class RentalSpaceMetadataProvider implements OwnerMetadataProvider {
     private final RoomMetadataProvider roomProvider;
     @Override public OwnerType supports() { return OwnerType.RENTAL_SPACE; }
-    @Override public Map<String, String> metadataFor(String ownerId) {
+    @Override public Map<String, String> metadataFor(Long ownerId) {
         return roomProvider.metadataFor(ownerId);
     }
 }

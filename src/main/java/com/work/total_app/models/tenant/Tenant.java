@@ -19,24 +19,25 @@ import java.util.List;
 @Entity
 public class Tenant {
     @Id
-    private String id; //same as name but lowercase
+    @GeneratedValue
+    private Long id; //same as name but lowercase
     @NonNull
     private String name;
     private String cui;
     private Boolean pf;
     private Boolean active;
 
-    @ElementCollection
-    private List<String> emails;
-    @ElementCollection
-    private List<Observation> observations;
-    @ElementCollection
-    private List<String> attachmentIds;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<String> emails = new ArrayList<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<Observation> observations = new ArrayList<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<String> attachmentIds = new ArrayList<>();
 
     // Tenant ↔ TenantRentalData
-    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "tenant", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("tenant-rental")
-    private List<TenantRentalData> rentalData;
+    private List<TenantRentalData> rentalData = new ArrayList<>();
 
     public void addRentalData(TenantRentalData rd) {
         rentalData.add(rd);
@@ -46,5 +47,13 @@ public class Tenant {
     public void removeRentalData(TenantRentalData rd) {
         rentalData.remove(rd);
         rd.setTenant(null);
+    }
+
+    public void getDataFromDto(CreateTenantDto tenantDto) {
+        setName(tenantDto.getName());
+        setPf(tenantDto.getPf());
+        setCui(tenantDto.getCui());
+        setObservations(tenantDto.getObservations());
+        setEmails(tenantDto.getEmails());
     }
 }

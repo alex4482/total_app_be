@@ -13,7 +13,7 @@ import java.util.Map;
 public class BuildingMetadataProvider implements OwnerMetadataProvider {
     private final BuildingService buildingService;
     @Override public OwnerType supports() { return OwnerType.BUILDING; }
-    @Override public Map<String, String> metadataFor(String ownerId) {
+    @Override public Map<String, String> metadataFor(Long ownerId) {
         var b = buildingService.getBuilding(ownerId);
         return Map.of(
                 "buildingName", b.getName(),

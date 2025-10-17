@@ -6,6 +6,6 @@ import java.util.Map;
 
 public interface OwnerMetadataProvider {
     OwnerType supports();
-    Map<String, String> metadataFor(String ownerId);
+    Map<String, String> metadataFor(Long ownerId);
 }
 

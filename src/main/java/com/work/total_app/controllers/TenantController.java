@@ -3,6 +3,7 @@ package com.work.total_app.controllers;
 import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.runtime_errors.ValidationException;
+import com.work.total_app.models.tenant.CreateTenantDto;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.models.tenant.TenantRentalData;
 import com.work.total_app.models.tenant.TenantRentalDto;
@@ -45,7 +46,7 @@ public class TenantController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tenant> getTenant(@PathVariable String id)
+    public ResponseEntity<Tenant> getTenant(@PathVariable Long id)
     {
         if (id == null)
         {
@@ -60,7 +61,7 @@ public class TenantController {
     }
 
     @PostMapping
-    public ResponseEntity<Tenant> addTenant(@RequestBody Tenant tenant)
+    public ResponseEntity<Tenant> addTenant(@RequestBody CreateTenantDto tenant)
     {
         if (tenant == null)
         {
@@ -82,8 +83,31 @@ public class TenantController {
         }
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<Tenant> updateTenant(@PathVariable Long id, @RequestBody CreateTenantDto tenant)
+    {
+        if (tenant == null)
+        {
+            throw new ValidationException("Body is null when updating tenant");
+        }
+
+        try {
+            Tenant t = tenantService.updateTenantDetails(id, tenant);
+            if (t == null)
+            {
+                return ResponseEntity.internalServerError().build();
+            }
+            return new ResponseEntity<>(t, HttpStatus.OK);
+        }
+        catch (Exception e)
+        {
+            // TODO: log e
+            throw e;
+        }
+    }
+
     @DeleteMapping("/{id}")
-    public void deleteTenant(@PathVariable String id)
+    public void deleteTenant(@PathVariable Long id)
     {
         tenantService.deleteTenant(id);
     }
