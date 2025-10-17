@@ -8,10 +8,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.List;
-
-import static jakarta.persistence.FetchType.LAZY;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
@@ -19,7 +15,7 @@ import static jakarta.persistence.FetchType.LAZY;
 public class Room extends Location{
 
     // ROOM → BUILDING (owning side)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @ManyToOne(fetch = FetchType.EAGER, optional = true)
     @JoinColumn(name = "building_id")
     @JsonBackReference
     private Building building;

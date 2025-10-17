@@ -16,7 +16,7 @@ import java.util.UUID;
 public class FileAsset {
 
     @Id
-    @Column(name="id", columnDefinition = "BINARY(16)")
+    @Column(name="id")
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -24,7 +24,7 @@ public class FileAsset {
     private OwnerType ownerType;
 
     @Column(name="owner_id", nullable=false)
-    private String ownerId;
+    private Long ownerId;
 
     @Column(name="original_filename", nullable=false, length=255)
     private String originalFilename;
@@ -39,7 +39,7 @@ public class FileAsset {
     private String checksum;
 
     @Lob
-    @Basic(fetch = FetchType.LAZY)
+    @Basic(fetch = FetchType.EAGER)
     @Column(name="data")
     private byte[] data;
 

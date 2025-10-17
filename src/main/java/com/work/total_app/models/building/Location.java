@@ -13,7 +13,8 @@ import java.util.List;
 @Inheritance(strategy = InheritanceType.JOINED) // or SINGLE_TABLE
 public abstract class Location {
     @Id
-    protected String id;
+    @GeneratedValue
+    protected Long id;
     protected String name;
     protected String officialName; // in registre
     @ElementCollection
@@ -25,10 +26,6 @@ public abstract class Location {
     // location → INDEX COUNTERS (inverse side, counters at room level)
     @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<IndexCounter> counters;
-
-    public void createId() {
-        id = location.name() + "-" + name;
-    }
 
     public void addCounter(IndexCounter ic) {
         counters.add(ic);

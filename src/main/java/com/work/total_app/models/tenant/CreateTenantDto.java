@@ -10,7 +10,6 @@ import java.util.List;
 @Setter
 public class CreateTenantDto {
 
-    private String id; //same as name but lowercase
     private String name;
     private String cui;
     private Boolean pf;

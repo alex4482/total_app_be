@@ -12,7 +12,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.FetchType.EAGER;
 
 @Entity
 @Data
@@ -24,7 +24,7 @@ public class IndexCounter {
     private Long id;
     private String name;
 
-    @ManyToOne(fetch = LAZY) @JoinColumn(name = "location_id")
+    @ManyToOne(fetch = EAGER) @JoinColumn(name = "location_id")
     private Location location;
 
     @Enumerated(EnumType.STRING)

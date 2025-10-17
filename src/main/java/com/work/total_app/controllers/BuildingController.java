@@ -67,7 +67,7 @@ public class BuildingController {
     }
 
     @GetMapping("/{bid}")
-    public Building getBuilding(@PathVariable String bid)
+    public Building getBuilding(@PathVariable Long bid)
     {
         return buildingService.getBuilding(bid);
     }
@@ -79,13 +79,13 @@ public class BuildingController {
     }
 
     @GetMapping({"/spaces/{sid}", "/{bid}/spaces/{sid}"})
-    public RentalSpace getSpace(@PathVariable String bid, @PathVariable String sid)
+    public RentalSpace getSpace(@PathVariable Long bid, @PathVariable Long sid)
     {
         return spaceService.getSpace(bid, sid);
     }
 
     @PostMapping({"/spaces", "/{bid}/spaces"})
-    public Room addSpace(@PathVariable String bid, @RequestBody Room newSpace)
+    public Room addSpace(@PathVariable Long bid, @RequestBody Room newSpace)
     {
         return spaceService.addSpace(bid, newSpace);
     }

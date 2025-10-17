@@ -24,11 +24,10 @@ public class BuildingService {
         {
             throw new ValidationException("No location/name for given building to add.");
         }
-        b.setId(b.getLocation() + "-" + b.getName());
         return buildingRepository.save(b);
     }
 
-    public Building getBuilding(String bid) {
+    public Building getBuilding(Long bid) {
         if (bid == null)
         {
             throw new RuntimeException("No building id given.");

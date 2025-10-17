@@ -23,18 +23,18 @@ public class DatabaseHelper {
 
     // Permanent
     public FileAsset save(FileAsset asset) { return fileRepo.save(asset); }
-    public boolean existsByOwnerAndName(OwnerType type, String ownerId, String name) {
+    public boolean existsByOwnerAndName(OwnerType type, Long ownerId, String name) {
         return fileRepo.existsByOwnerTypeAndOwnerIdAndOriginalFilename(type, ownerId, name);
     }
-    public boolean existsByOwnerAndChecksum(OwnerType type, String ownerId, String checksum) {
+    public boolean existsByOwnerAndChecksum(OwnerType type, Long ownerId, String checksum) {
         return fileRepo.existsByOwnerTypeAndOwnerIdAndChecksum(type, ownerId, checksum);
     }
-    public Optional<FileAsset> findByOwnerAndChecksum(OwnerType type, String ownerId, String checksum) {
+    public Optional<FileAsset> findByOwnerAndChecksum(OwnerType type, Long ownerId, String checksum) {
         return fileRepo.findByOwnerTypeAndOwnerIdAndChecksum(type, ownerId, checksum);
     }
     public Optional<FileAsset> findById(UUID id) { return fileRepo.findById(id); }
 
-    public List<FileAsset> listByOwner(OwnerType type, String ownerId) {
+    public List<FileAsset> listByOwner(OwnerType type, Long ownerId) {
         return fileRepo.findAllByOwnerTypeAndOwnerId(type, ownerId);
     }
 

@@ -12,11 +12,11 @@ import java.util.UUID;
 @Repository
 public interface FileAssetRepository extends JpaRepository<FileAsset, UUID> {
 
-    boolean existsByOwnerTypeAndOwnerIdAndOriginalFilename(OwnerType ownerType, String ownerId, String originalFilename);
+    boolean existsByOwnerTypeAndOwnerIdAndOriginalFilename(OwnerType ownerType, Long ownerId, String originalFilename);
 
-    List<FileAsset> findAllByOwnerTypeAndOwnerId(OwnerType ownerType, String ownerId);
+    List<FileAsset> findAllByOwnerTypeAndOwnerId(OwnerType ownerType, Long ownerId);
 
-    boolean existsByOwnerTypeAndOwnerIdAndChecksum(OwnerType type, String ownerId, String checksum);
+    boolean existsByOwnerTypeAndOwnerIdAndChecksum(OwnerType type, Long ownerId, String checksum);
 
-    Optional<FileAsset> findByOwnerTypeAndOwnerIdAndChecksum(OwnerType type, String ownerId, String checksum);
+    Optional<FileAsset> findByOwnerTypeAndOwnerIdAndChecksum(OwnerType type, Long ownerId, String checksum);
 }

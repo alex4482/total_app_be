@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface RentalSpaceRepository extends JpaRepository<RentalSpace, String>, JpaSpecificationExecutor<RentalSpace> {
-    List<RentalSpace> findByBuildingId(String bid);
+public interface RentalSpaceRepository extends JpaRepository<RentalSpace, Long>, JpaSpecificationExecutor<RentalSpace> {
+    List<RentalSpace> findByBuildingId(Long bid);
 }

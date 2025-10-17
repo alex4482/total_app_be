@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TenantRepository extends JpaRepository<Tenant, String> {
+public interface TenantRepository extends JpaRepository<Tenant, Long> {
     List<Tenant> findByActive(boolean active);
 }

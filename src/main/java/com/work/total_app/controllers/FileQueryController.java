@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/files")
+@RequestMapping("/files")
 public class FileQueryController {
 
     @Autowired
@@ -18,7 +18,7 @@ public class FileQueryController {
     @GetMapping
     public List<FileDto> listByOwner(
             @RequestParam("ownerType") String ownerType,
-            @RequestParam("ownerId") String ownerId
+            @RequestParam("ownerId") Long ownerId
     ) {
         var type = OwnerType.valueOf(ownerType);
         return databaseHelper.listByOwner(type, ownerId).stream()

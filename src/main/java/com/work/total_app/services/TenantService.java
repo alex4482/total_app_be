@@ -3,7 +3,9 @@ package com.work.total_app.services;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.models.building.RentalSpaceFilter;
+import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
+import com.work.total_app.models.tenant.CreateTenantDto;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.repositories.RentalSpaceRepository;
 import com.work.total_app.repositories.TenantRentalDataRepository;
@@ -26,25 +28,18 @@ public class TenantService {
     @Autowired
     private RentalSpaceRepository spaceRepository;
 
-    public Tenant addTenant(Tenant tenant) {
-        if (tenant.getId() != null)
-        {
-            return tenantRepository.save(tenant);
-        }
+    public Tenant addTenant(CreateTenantDto tenantDto) {
+        Tenant tenant = new Tenant();
+        tenant.getDataFromDto(tenantDto);
 
-        tenant.setId(tenant.getName().toLowerCase(Locale.ROOT).replace(' ', '-'));
-        if (tenantRepository.existsById(tenant.getId()))
-        {
-            throw new ValidationException("Tenant with id " + tenant.getId() + " already exists");
-        }
         return tenantRepository.save(tenant);
     }
 
-    public void deleteTenant(String id) {
+    public void deleteTenant(Long id) {
         tenantRepository.deleteById(id);
     }
 
-    public Tenant getTenant(String id) {
+    public Tenant getTenant(Long id) {
         return tenantRepository.findById(id).orElse(null);
     }
 
@@ -71,5 +66,18 @@ public class TenantService {
         }
 
         return tenantRepository.findAll();
+    }
+
+    public Tenant updateTenantDetails(Long id, CreateTenantDto updatedTenantDto) {
+        if (id == null)
+        {
+            throw new ValidationException("Given updated tenant has no id");
+        }
+        Tenant oldTenant = tenantRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Cant update tenant, if tenant doesnt exist?"));
+
+        oldTenant.getDataFromDto(updatedTenantDto);
+
+        return tenantRepository.save(oldTenant);
     }
 }

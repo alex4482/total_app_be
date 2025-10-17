@@ -18,7 +18,7 @@ public class RoomMetadataProvider implements OwnerMetadataProvider {
     private final RoomRepository roomRepository;
     private final BuildingService buildingService;
     @Override public OwnerType supports() { return OwnerType.ROOM; }
-    @Override public Map<String, String> metadataFor(String ownerId) {
+    @Override public Map<String, String> metadataFor(Long ownerId) {
         Room r = roomRepository.findById(ownerId).orElseThrow(() -> new NotFoundException("room not found"));
         Building b = buildingService.getBuilding(r.getBuilding().getId());
         return Map.of(
