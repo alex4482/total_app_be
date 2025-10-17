@@ -49,10 +49,6 @@ public class TenantRentalService {
         trd.addPriceChange(dto.price(), Date.from(Instant.now()));
 
         trd = tenantRentalRepository.save(trd);
-        if (trd == null)
-        {
-            throw new RuntimeException("error saving new rental data: " + dto);
-        }
 
         t.addRentalData(trd);
         rs.setRentalAgreement(trd);

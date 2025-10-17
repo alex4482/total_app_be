@@ -12,6 +12,7 @@ import com.work.total_app.repositories.TenantRentalDataRepository;
 import com.work.total_app.repositories.TenantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +29,9 @@ public class TenantService {
     @Autowired
     private RentalSpaceRepository spaceRepository;
 
+    @Autowired
+    private FileDeletionService fileDeletionService;
+
     public Tenant addTenant(CreateTenantDto tenantDto) {
         Tenant tenant = new Tenant();
         tenant.getDataFromDto(tenantDto);
@@ -35,7 +39,18 @@ public class TenantService {
         return tenantRepository.save(tenant);
     }
 
+    @Transactional
     public void deleteTenant(Long id) {
+        if (!tenantRepository.existsById(id))
+        {
+            throw new NotFoundException(
+                    String.format("Cant delete tenant, if tenant with id %d doesnt exist!", id));
+        }
+
+        // Delete all files associated with this tenant
+        fileDeletionService.deleteAllFilesForTenant(id);
+
+        // Delete the tenant
         tenantRepository.deleteById(id);
     }
 

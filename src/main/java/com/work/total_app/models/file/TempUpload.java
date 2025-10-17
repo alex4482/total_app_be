@@ -7,6 +7,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents a file staged in temporary storage prior to being committed to an owner.
+ * The row holds metadata and a filesystem path to the temp file.
+ * Expiration is set by default to created_at + 6 hours to allow cleanup jobs to purge stale temps.
+ */
 @Entity
 @Table(name = "temp_upload")
 @Data

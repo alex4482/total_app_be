@@ -1,11 +1,6 @@
 package com.work.total_app.helpers.metadata;
 
-import com.work.total_app.models.building.Building;
-import com.work.total_app.models.building.Room;
 import com.work.total_app.models.file.OwnerType;
-import com.work.total_app.models.runtime_errors.NotFoundException;
-import com.work.total_app.repositories.RoomRepository;
-import com.work.total_app.services.BuildingService;
 import com.work.total_app.services.TenantService;
 import com.work.total_app.utils.OwnerMetadataProvider;
 import lombok.RequiredArgsConstructor;

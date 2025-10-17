@@ -6,6 +6,15 @@ import lombok.Data;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Persistent representation of a stored file asset.
+ *
+ * Notes:
+ *  - Uniqueness constraints:
+ *      uq_owner_name: per (owner_type, owner_id) a filename must be unique
+ *      uq_owner_checksum: per (owner_type, owner_id) a checksum must be unique (deduplication)
+ *  - The raw bytes are stored as a BLOB in 'data' (can be disabled by not populating it)
+ */
 @Entity
 @Table(name = "file_asset",
        uniqueConstraints = {
@@ -43,14 +52,17 @@ public class FileAsset {
     @Column(name="data")
     private byte[] data;
 
-    @Column(name="created_at", nullable=false)
-    private Instant createdAt;
+    @Column(name="modified_at")
+    private Instant modifiedAt;
+
+    @Column(name="uploaded_at", nullable=false)
+    private Instant uploadedAt;
 
     public FileAsset() {}
 
     @PrePersist
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
-        if (createdAt == null) createdAt = Instant.now();
+        if (uploadedAt == null) uploadedAt = Instant.now();
     }
 }
