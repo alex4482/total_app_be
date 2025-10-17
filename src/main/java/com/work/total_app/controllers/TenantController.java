@@ -107,9 +107,37 @@ public class TenantController {
     }
 
     @DeleteMapping("/{id}")
-    public void deleteTenant(@PathVariable Long id)
+    public ResponseEntity<Void> deleteTenant(@PathVariable Long id)
     {
-        tenantService.deleteTenant(id);
+        // Validate input early
+        if (id == null)
+        {
+            return ResponseEntity.badRequest().build();
+        }
+        try
+        {
+            tenantService.deleteTenant(id);
+            // 204 No Content is the conventional success status for DELETE
+            return ResponseEntity.noContent().build();
+        }
+        catch (com.work.total_app.models.runtime_errors.NotFoundException e)
+        {
+            // Service signals that the tenant doesn't exist
+            log.info("Delete tenant {} requested but not found", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        catch (org.springframework.dao.DataIntegrityViolationException e)
+        {
+            // Likely FK constraint: tenant still referenced by other records
+            log.warn("Delete tenant {} failed due to referential integrity: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        catch (Exception e)
+        {
+            // Unexpected error path; log with stacktrace for diagnostics
+            log.error("Unexpected error deleting tenant {}", id, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping("/new-rental-agreement")

@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -63,7 +62,9 @@ public class FileCommitService {
                         existing.getContentType(),
                         existing.getSizeBytes(),
                         existing.getChecksum(),
-                        "/api/files/" + existing.getId()
+                        "/files/" + existing.getId(),
+                        existing.getModifiedAt() != null ? existing.getModifiedAt().toString() : null,
+                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null
                 ));
                 continue;
             }
@@ -91,7 +92,7 @@ public class FileCommitService {
             fa.setSizeBytes(tu.getSizeBytes());
             fa.setChecksum(tu.getChecksum());
             fa.setData(data); // set to null if you don't want BLOBs in DB
-            fa.setCreatedAt(Instant.now());
+            // uploadedAt is set automatically by @PrePersist
             databaseHelper.save(fa);
 
             // 6) Schedule FS actions based on transaction outcome
@@ -114,7 +115,9 @@ public class FileCommitService {
                     fa.getContentType(),
                     fa.getSizeBytes(),
                     fa.getChecksum(),
-                    "/api/files/" + fa.getId()
+                    "/api/files/" + fa.getId(),
+                    fa.getModifiedAt() != null ? fa.getModifiedAt().toString() : null,
+                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null
             ));
         }
 

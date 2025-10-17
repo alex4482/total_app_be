@@ -14,6 +14,7 @@ import org.simplejavamail.api.mailer.config.TransportStrategy;
 import org.simplejavamail.email.EmailBuilder;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -33,6 +34,7 @@ public class EmailHelper {
     private static final String mailServerPortKey = "emailer.server.port";
 
     @Autowired
+    @Lazy
     private FileSystemHelper fileHelper;
     @Autowired
     private DatabaseHelper databaseHelper;

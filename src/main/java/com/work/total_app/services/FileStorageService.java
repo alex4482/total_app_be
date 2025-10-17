@@ -16,6 +16,16 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * Coordinates file storage across DB and filesystem.
+ *
+ * Responsibilities:
+ *  - Stage incoming multipart files in a temporary area (filesystem + DB row in TempUpload)
+ *  - Commit selected temp uploads to a permanent FileAsset tied to an owner (OwnerRef)
+ *  - Enforce filename uniqueness per owner (unless overwrite=true)
+ *  - Deduplicate by checksum per owner to avoid duplicate storage
+ *  - Use transaction synchronization to move files on the filesystem only after DB commit
+ */
 @Service
 public class FileStorageService {
 
@@ -24,14 +34,19 @@ public class FileStorageService {
     @Autowired
     private FileSystemHelper fileSystemHelper;
 
+    /**
+     * Stage a batch of files in temporary storage associated with a batchId.
+     */
     @Transactional
     public List<TempUploadDto> uploadTempBatch(UUID batchId, List<MultipartFile> files) throws Exception {
         List<TempUploadDto> out = new ArrayList<>();
         for (MultipartFile mf : files) {
             byte[] data = mf.getBytes();
             String checksum = sha256(data);
+            // Write to temp folder on disk
             FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, mf.getOriginalFilename(), data);
 
+            // Persist a TempUpload row pointing to temp path
             TempUpload tu = new TempUpload();
             tu.setBatchId(batchId);
             tu.setOriginalFilename(mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "unnamed");
@@ -66,13 +81,13 @@ public class FileStorageService {
 
             // 1) Dedup by checksum
             if (databaseHelper.existsByOwnerAndChecksum(owner.type(), owner.id(), tu.getChecksum())) {
-                // delete temp and skip creating another copy
+                // schedule temp deletion if transaction rolls back
                 afterRollbackDeletes.add(() -> {
                     try { Files.deleteIfExists(Path.of(tu.getTempPath())); } catch (Exception ignored) {}
                 });
                 // temp row cleanup inside transaction
                 databaseHelper.deleteTemp(tempId);
-                // also return the existing asset info
+                // also return the existing asset info (no duplicate created)
                 FileAsset existing = databaseHelper
                         .findByOwnerAndChecksum(owner.type(), owner.id(), tu.getChecksum())
                         .orElseThrow();
@@ -84,7 +99,9 @@ public class FileStorageService {
                         existing.getContentType(),
                         existing.getSizeBytes(),
                         existing.getChecksum(),
-                        "/api/files/" + existing.getId()
+                        "/files/" + existing.getId(),
+                        existing.getModifiedAt() != null ? existing.getModifiedAt().toString() : null,
+                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null
                 ));
                 continue;
             }
@@ -102,7 +119,7 @@ public class FileStorageService {
             // 4) Read bytes from TEMP (for BLOB) BEFORE commit completes
             byte[] data = Files.readAllBytes(tempPath);
 
-            // 5) Persist DB row
+            // 5) Persist DB row with BLOB
             FileAsset fa = new FileAsset();
             fa.setId(finalId);
             fa.setOwnerType(owner.type());
@@ -111,11 +128,11 @@ public class FileStorageService {
             fa.setContentType(tu.getContentType());
             fa.setSizeBytes(tu.getSizeBytes());
             fa.setChecksum(tu.getChecksum());
-            fa.setData(data); // comment this if you don't want BLOBs
-            fa.setCreatedAt(Instant.now());
+            fa.setData(data); // comment or remove this if you don't want to store BLOBs
+            // uploadedAt is set automatically by @PrePersist
             databaseHelper.save(fa);
 
-            // 6) schedule FS actions
+            // 6) schedule FS actions: move temp -> final after successful commit
             afterCommitMoves.add(() -> {
                 try { fileSystemHelper.promoteTempToFinal(new FileSystemHelper.TempHandle(tempPath), finalPath); }
                 catch (Exception e) { e.printStackTrace(); }
@@ -135,11 +152,13 @@ public class FileStorageService {
                     fa.getContentType(),
                     fa.getSizeBytes(),
                     fa.getChecksum(),
-                    "/api/files/" + fa.getId()
+                    "/api/files/" + fa.getId(),
+                    fa.getModifiedAt() != null ? fa.getModifiedAt().toString() : null,
+                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null
             ));
         }
 
-        // register synchronization once
+        // Register synchronization once so filesystem changes follow transaction outcome
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override public void afterCommit() {
                 for (var r : afterCommitMoves) r.run();
