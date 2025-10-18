@@ -16,7 +16,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/buildings")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class BuildingController {
 
