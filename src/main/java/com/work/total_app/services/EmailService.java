@@ -27,16 +27,75 @@ public class EmailService {
         return repository.saveAll(presets);
     }
 
+    public EmailPreset saveSingleInvoicePreset(EmailPreset preset) {
+        return repository.save(preset);
+    }
+
+    public void deleteInvoicePreset(Integer id) {
+        repository.deleteById(id);
+    }
+
     public List<EmailData> sendEmails(List<EmailData> data) {
         List<EmailData> notSent = new ArrayList<>();
         for (EmailData e : data)
         {
+            // Validare: verifică dacă există destinatari
+            if (e.getRecipients() == null || e.getRecipients().length == 0)
+            {
+                e.setErrorMessage("Nu există destinatari specificați");
+                notSent.add(e);
+                continue;
+            }
+
+            // Validare: verifică formatul emailurilor
+            String invalidEmail = validateEmailAddresses(e.getRecipients());
+            if (invalidEmail != null)
+            {
+                e.setErrorMessage("Email invalid: " + invalidEmail);
+                notSent.add(e);
+                continue;
+            }
+
+            // Validare: verifică subject
+            if (e.getSubject() == null || e.getSubject().trim().isEmpty())
+            {
+                e.setErrorMessage("Subject-ul este obligatoriu");
+                notSent.add(e);
+                continue;
+            }
+
+            // Validare: verifică message
+            if (e.getMessage() == null || e.getMessage().trim().isEmpty())
+            {
+                e.setErrorMessage("Mesajul este obligatoriu");
+                notSent.add(e);
+                continue;
+            }
+
+            // Încearcă să trimită emailul
             EEmailSendStatus status = helper.createAndSendMail(e);
             if (status != EEmailSendStatus.OK)
             {
+                e.setErrorMessage("Eroare la trimiterea emailului");
                 notSent.add(e);
             }
         }
         return notSent;
+    }
+
+    private String validateEmailAddresses(String[] emails) {
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        for (String email : emails)
+        {
+            if (email == null || email.trim().isEmpty())
+            {
+                return "(email gol)";
+            }
+            if (!email.matches(emailRegex))
+            {
+                return email;
+            }
+        }
+        return null;
     }
 }
