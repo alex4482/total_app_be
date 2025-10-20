@@ -7,6 +7,7 @@ import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
 import com.work.total_app.models.tenant.CreateTenantDto;
 import com.work.total_app.models.tenant.Tenant;
+import com.work.total_app.models.tenant.TenantBulkDeleteResultDto;
 import com.work.total_app.repositories.RentalSpaceRepository;
 import com.work.total_app.repositories.TenantRentalDataRepository;
 import com.work.total_app.repositories.TenantRepository;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class TenantService {
@@ -36,6 +36,11 @@ public class TenantService {
         Tenant tenant = new Tenant();
         tenant.getDataFromDto(tenantDto);
 
+        // Set default active to false if not provided
+        if (tenantDto.getActive() == null) {
+            tenant.setActive(false);
+        }
+
         return tenantRepository.save(tenant);
     }
 
@@ -52,6 +57,56 @@ public class TenantService {
 
         // Delete the tenant
         tenantRepository.deleteById(id);
+    }
+
+    @Transactional
+    public TenantBulkDeleteResultDto bulkDeleteTenants(List<Long> tenantIds) {
+        TenantBulkDeleteResultDto result = new TenantBulkDeleteResultDto();
+        result.setTotalRequested(tenantIds.size());
+
+        int successCount = 0;
+        int failedCount = 0;
+
+        for (Long tenantId : tenantIds) {
+            try {
+                // Check if tenant exists first
+                Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
+                if (tenant == null) {
+                    result.getFailures().add(new TenantBulkDeleteResultDto.FailedDeletion(
+                            tenantId, null, "Tenant not found"));
+                    failedCount++;
+                    continue;
+                }
+
+                // Delete all files associated with this tenant
+                fileDeletionService.deleteAllFilesForTenant(tenantId);
+
+                // Delete the tenant
+                tenantRepository.deleteById(tenantId);
+                successCount++;
+
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                // FK constraint: tenant still referenced by other records
+                Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
+                result.getFailures().add(new TenantBulkDeleteResultDto.FailedDeletion(
+                        tenantId,
+                        tenant != null ? tenant.getName() : null,
+                        "Tenant is still referenced by other records (contracts, spaces, etc.)"));
+                failedCount++;
+            } catch (Exception e) {
+                // Any other unexpected error
+                Tenant tenant = tenantRepository.findById(tenantId).orElse(null);
+                result.getFailures().add(new TenantBulkDeleteResultDto.FailedDeletion(
+                        tenantId,
+                        tenant != null ? tenant.getName() : null,
+                        "Unexpected error: " + e.getMessage()));
+                failedCount++;
+            }
+        }
+
+        result.setSuccessCount(successCount);
+        result.setFailedCount(failedCount);
+        return result;
     }
 
     public Tenant getTenant(Long id) {

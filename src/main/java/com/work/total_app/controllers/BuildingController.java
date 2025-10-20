@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.Building;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;

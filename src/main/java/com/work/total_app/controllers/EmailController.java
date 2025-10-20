@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.email.EmailData;
 import com.work.total_app.models.email.EmailPreset;
 import com.work.total_app.models.email.EmailPresetsDto;

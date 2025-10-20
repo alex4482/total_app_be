@@ -12,9 +12,11 @@ public class CreateTenantDto {
 
     private String name;
     private String cui;
+    private String regNumber;
     private Boolean pf;
     private Boolean active;
 
     private List<String> emails;
+    private List<String> phoneNumbers;
     private List<Observation> observations;
 }

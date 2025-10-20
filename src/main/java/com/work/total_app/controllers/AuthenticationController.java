@@ -1,11 +1,8 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.authentication.*;
 import com.work.total_app.services.authentication.AuthenticationService;
 import com.work.total_app.services.authentication.JwtService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

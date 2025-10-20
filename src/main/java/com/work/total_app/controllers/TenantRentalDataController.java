@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.stats.MonthCalculationsDto;
 import com.work.total_app.services.TenantRentalDataService;
 import lombok.extern.log4j.Log4j2;

@@ -48,6 +48,9 @@ public class DatabaseHelper {
     /** Find an asset by its ID. */
     public Optional<FileAsset> findById(UUID id) { return fileRepo.findById(id); }
 
+    /** Delete a file asset by its ID. */
+    public void deleteById(UUID id) { fileRepo.deleteById(id); }
+
     /** List all assets belonging to a given owner. */
     public List<FileAsset> listByOwner(OwnerType type, Long ownerId) {
         return fileRepo.findAllByOwnerTypeAndOwnerId(type, ownerId);
