@@ -21,12 +21,14 @@ public class EmailController {
     private EmailService service;
 
     @PostMapping("/send-emails")
+    @ResponseBody
     public List<EmailData> sendEmails(@RequestBody SendEmailsDto dto)
     {
         return service.sendEmails(dto.getData());
     }
 
     @GetMapping
+    @ResponseBody
     public EmailPresetsDto getInvoicePresets()
     {
         List<EmailPreset> presets = service.getInvoicePresets();
@@ -35,7 +37,8 @@ public class EmailController {
         return dto;
     }
 
-    @PostMapping
+    @PostMapping("/bulk")
+    @ResponseBody
     public EmailPresetsDto postInvoicePresets(@RequestBody EmailPresetsDto presetsDto)
     {
         List<EmailPreset> savedPresets = service.saveInvoicePresets(presetsDto.getPresets());
@@ -46,5 +49,19 @@ public class EmailController {
         EmailPresetsDto dto = new EmailPresetsDto();
         dto.setPresets(savedPresets);
         return dto;
+    }
+
+    @PostMapping
+    @ResponseBody
+    public EmailPreset postSingleInvoicePreset(@RequestBody EmailPreset preset)
+    {
+        return service.saveSingleInvoicePreset(preset);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseBody
+    public void deleteInvoicePreset(@PathVariable Integer id)
+    {
+        service.deleteInvoicePreset(id);
     }
 }

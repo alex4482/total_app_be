@@ -4,7 +4,6 @@ import com.work.total_app.helpers.files.DatabaseHelper;
 import com.work.total_app.helpers.files.FileSystemHelper;
 import com.work.total_app.models.email.EEmailSendStatus;
 import com.work.total_app.models.email.EmailData;
-import com.work.total_app.models.file.FileAsset;
 import com.work.total_app.models.file.TempUpload;
 import lombok.extern.log4j.Log4j2;
 import org.simplejavamail.api.email.Email;
@@ -14,24 +13,30 @@ import org.simplejavamail.api.mailer.config.TransportStrategy;
 import org.simplejavamail.email.EmailBuilder;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.UUID;
 
 @Log4j2
 @Component
 public class EmailHelper {
 
-    private static final String fromEmailKey = "emailer.from";
-    private static final String fromEmailPasswordKey = "emailer.password";
-    private static final String mailServerKey = "emailer.server.address";
-    private static final String mailServerPortKey = "emailer.server.port";
+    @Value("${emailer.from}")
+    private String fromEmail;
+
+    @Value("${emailer.password}")
+    private String fromPassword;
+
+    @Value("${emailer.server.address}")
+    private String mailServer;
+
+    @Value("${emailer.server.port}")
+    private Integer mailServerPort;
 
     @Autowired
     @Lazy
@@ -42,17 +47,18 @@ public class EmailHelper {
     public EEmailSendStatus createAndSendMail(EmailData data) {
 
         String subject = data.getSubject();
-        String fromEmail = PropertiesHelper.getProp(fromEmailKey);
-        String fromPassword = PropertiesHelper.getProp(fromEmailPasswordKey);
-
-        String mailServer = PropertiesHelper.getProp(mailServerKey);
-        Integer mailServerPort = Integer.valueOf(PropertiesHelper.getProp(mailServerPortKey));
 
         EmailPopulatingBuilder emailBuilder = EmailBuilder.startingBlank()
                 .from(fromEmail)
-                .to(Arrays.toString(data.getRecipients()))
                 .withSubject(subject)
                 .withPlainText(data.getMessage());
+
+        // Add each recipient individually
+        if (data.getRecipients() != null) {
+            for (String recipient : data.getRecipients()) {
+                emailBuilder = emailBuilder.to(recipient);
+            }
+        }
         if (data.getAttachedFilesIds() != null && data.getAttachedFilesIds().length > 0)
         {
             try

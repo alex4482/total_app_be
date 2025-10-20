@@ -5,6 +5,9 @@ target/
 !**/src/test/**/target/
 logs/
 
+### Security - Local configuration with credentials ###
+**/application-local.properties
+
 ### STS ###
 .apt_generated
 .classpath

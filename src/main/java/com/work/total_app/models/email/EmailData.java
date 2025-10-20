@@ -13,4 +13,5 @@ public class EmailData {
     private String message;
     private UUID[] attachedFilesIds;
     private String[] recipients;
+    private String errorMessage; // Motivul pentru care emailul nu a putut fi trimis
 }
