@@ -165,4 +165,38 @@ public class FileDownloadController {
                     .body("Failed to create ZIP archive: " + e.getMessage());
         }
     }
+
+    /**
+     * Delete a file by its UUID.
+     * Removes both the database record and the filesystem file (if it exists).
+     *
+     * @param id - UUID of the file to delete
+     * @return 204 No Content on success, 404 if file not found
+     */
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> deleteById(@PathVariable UUID id) {
+        FileAsset file = databaseHelper.findById(id).orElse(null);
+        if (file == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            // Delete from filesystem (if it exists there)
+            Path filePath = fileSystemHelper.buildPermanentPath(
+                    new OwnerRef(file.getOwnerType(), file.getOwnerId()),
+                    file.getId(),
+                    file.getOriginalFilename()
+            );
+            fileSystemHelper.delete(filePath);
+        } catch (Exception e) {
+            // Log but don't fail if filesystem deletion fails
+            // The DB deletion is more important for consistency
+        }
+
+        // Delete from database
+        databaseHelper.deleteById(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

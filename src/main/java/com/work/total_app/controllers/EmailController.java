@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.email.EmailData;
 import com.work.total_app.models.email.EmailPreset;
 import com.work.total_app.models.email.EmailPresetsDto;
@@ -15,7 +14,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/email-presets")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class EmailController {
 

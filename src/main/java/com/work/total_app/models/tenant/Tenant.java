@@ -24,11 +24,14 @@ public class Tenant {
     @NonNull
     private String name;
     private String cui;
+    private String regNumber;
     private Boolean pf;
     private Boolean active;
 
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> emails = new ArrayList<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<String> phoneNumbers = new ArrayList<>();
     @ElementCollection(fetch = FetchType.EAGER)
     private List<Observation> observations = new ArrayList<>();
     @ElementCollection(fetch = FetchType.EAGER)
@@ -53,7 +56,9 @@ public class Tenant {
         setName(tenantDto.getName());
         setPf(tenantDto.getPf());
         setCui(tenantDto.getCui());
+        setRegNumber(tenantDto.getRegNumber());
         setObservations(tenantDto.getObservations());
         setEmails(tenantDto.getEmails());
+        setPhoneNumbers(tenantDto.getPhoneNumbers());
     }
 }

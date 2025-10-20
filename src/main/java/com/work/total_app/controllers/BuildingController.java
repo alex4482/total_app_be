@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.building.Building;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
@@ -16,7 +15,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/buildings")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class BuildingController {
 

@@ -1,6 +1,5 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.constants.AuthenticationConstants;
 import com.work.total_app.models.stats.MonthCalculationsDto;
 import com.work.total_app.services.TenantRentalDataService;
 import lombok.extern.log4j.Log4j2;
@@ -12,7 +11,6 @@ import java.time.Month;
 
 @Controller
 @RequestMapping("/tenant-rental-data")
-@CrossOrigin(origins = {AuthenticationConstants.PROD_WEBSITE_URL, }, originPatterns = {AuthenticationConstants.LOCAL_WEBSITE_PATTERN, AuthenticationConstants.STAGING_WEBSITE_PATTERN})
 @Log4j2
 public class TenantRentalDataController {
 
