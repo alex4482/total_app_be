@@ -28,6 +28,13 @@ public class EmailService {
     }
 
     public EmailPreset saveSingleInvoicePreset(EmailPreset preset) {
+        // Verifică dacă există deja un preset cu același nume
+        if (preset.getName() != null && !preset.getName().trim().isEmpty()) {
+            repository.findByName(preset.getName()).ifPresent(existing -> {
+                // Păstrează ID-ul existent pentru a face update
+                preset.setId(existing.getId());
+            });
+        }
         return repository.save(preset);
     }
 
