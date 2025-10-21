@@ -4,6 +4,7 @@ import com.work.total_app.models.building.Building;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.building.RentalSpace;
 import com.work.total_app.models.building.Room;
+import com.work.total_app.models.reading.LocationType;
 import com.work.total_app.services.BuildingService;
 import com.work.total_app.services.RentalSpaceService;
 import lombok.extern.log4j.Log4j2;
@@ -24,7 +25,26 @@ public class BuildingController {
     @Autowired
     private RentalSpaceService spaceService;
 
+    @GetMapping("/locations")
+    @ResponseBody
+    public List<String> listBuildingLocations()
+    {
+        return java.util.Arrays.stream(BuildingLocation.values())
+                .map(Enum::name)
+                .toList();
+    }
+
+    @GetMapping("/location-types")
+    @ResponseBody
+    public List<String> listLocationTypes()
+    {
+        return java.util.Arrays.stream(LocationType.values())
+                .map(Enum::name)
+                .toList();
+    }
+
     @GetMapping
+    @ResponseBody
     public List<Building> listBuildings(@RequestParam BuildingLocation buildingLocation)
     {
         return buildingService.listAll(buildingLocation);
