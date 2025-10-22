@@ -1,5 +1,6 @@
 package com.work.total_app.controllers;
 
+import com.work.total_app.config.LocationExcelColumnConfig;
 import com.work.total_app.models.building.*;
 import com.work.total_app.models.reading.LocationType;
 import com.work.total_app.services.BuildingService;
@@ -30,6 +31,9 @@ public class BuildingController {
 
     @Autowired
     private LocationImportExportService locationImportExportService;
+    @Autowired
+    private LocationExcelColumnConfig columnConfig;
+
 
     @GetMapping("/locations")
     @ResponseBody
@@ -47,6 +51,22 @@ public class BuildingController {
         return java.util.Arrays.stream(LocationType.values())
                 .map(Enum::name)
                 .toList();
+    }
+
+    @GetMapping("/import-columns")
+    @ResponseBody
+    public ExcelColumnsDto getImportColumns()
+    {
+        List<String> columns = List.of(
+                columnConfig.getLocationType(),
+                columnConfig.getName(),
+                columnConfig.getOfficialName(),
+                columnConfig.getBuildingLocation(),
+                columnConfig.getMp(),
+                columnConfig.getGroundLevel(),
+                columnConfig.getBuildingName()
+        );
+        return new ExcelColumnsDto(columns);
     }
 
     @GetMapping
@@ -160,14 +180,13 @@ public class BuildingController {
     /**
      * Import locations (Building, Room, RentalSpace) from Excel file.
      * Excel format:
-     * - Column 0: Type (Building, Room, RentalSpace)
-     * - Column 1: Name
+     * - Column 0: LocationType (Building, Room, RentalSpace)
+     * - Column 1: Name (unique)
      * - Column 2: OfficialName (optional)
-     * - Column 3: BuildingLocation (e.g., PRAHOVA, ALBA)
+     * - Column 3: BuildingLocation (LETCANI, TOMESTI)
      * - Column 4: Mp (square meters)
-     * - Column 5: LocationType (e.g., OFFICE, WAREHOUSE)
-     * - Column 6: GroundLevel (true/false, only for Room/RentalSpace)
-     * - Column 7: BuildingId (parent building ID, only for Room/RentalSpace)
+     * - Column 5: GroundLevel (true/false, only for Room/RentalSpace)
+     * - Column 6: BuildingName (parent building name, only for Room/RentalSpace)
      */
     @PostMapping("/import")
     @ResponseBody
