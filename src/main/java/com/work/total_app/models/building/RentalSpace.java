@@ -1,7 +1,6 @@
 package com.work.total_app.models.building;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.models.tenant.TenantRentalData;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.Predicate;
@@ -21,6 +20,16 @@ public class RentalSpace extends Room {
     @OneToOne(fetch = FetchType.EAGER, optional = true)
     @JsonManagedReference("rental-agreement")
     private TenantRentalData rentalAgreement;
+
+    /**
+     * Create a RentalSpace instance from DTO.
+     */
+    public static RentalSpace fromDto(CreateLocationDto dto) {
+        RentalSpace rentalSpace = new RentalSpace();
+        rentalSpace.populateFromDto(dto);
+        rentalSpace.setGroundLevel(dto.getGroundLevel());
+        return rentalSpace;
+    }
 
     public static Specification<RentalSpace> byFilter(RentalSpaceFilter f) {
         return (root, q, cb) -> {

@@ -239,8 +239,8 @@ type OwnerType =
 ### BuildingLocation
 ```typescript
 type BuildingLocation = 
-  | "PANTELIMON"
-  | "BERCENI";
+  | "LETCANI"
+  | "TOMESTI";
 ```
 
 ### CounterType

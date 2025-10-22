@@ -15,7 +15,7 @@ Returnează lista contoarele filtrate după tip, locație și owner.
 - `type` (CounterType) - Tipul contorului: "WATER", "GAS", "ELECTRICITY", etc.
 - `locationId` (String) - ID-ul locației
 - `locationType` (LocationType) - Tipul locației
-- `buildingLocation` (BuildingLocation) - Locația clădirii: "PANTELIMON", "BERCENI", etc.
+- `buildingLocation` (BuildingLocation) - Locația clădirii: "LETCANI", "TOMESTI"
 
 #### Response (200 OK)
 ```json
@@ -26,7 +26,7 @@ Returnează lista contoarele filtrate după tip, locație și owner.
     "serialNumber": "WM123456",
     "locationId": "5",
     "locationType": "ROOM",
-    "buildingLocation": "PANTELIMON",
+    "buildingLocation": "LETCANI",
     "readings": []
   }
 ]
@@ -50,7 +50,7 @@ Returnează detaliile unui contor specific.
   "serialNumber": "WM123456",
   "locationId": "5",
   "locationType": "ROOM",
-  "buildingLocation": "PANTELIMON",
+  "buildingLocation": "LETCANI",
   "readings": [
     {
       "id": 10,
@@ -76,7 +76,7 @@ Creează un contor nou.
   "serialNumber": "WM123456",
   "locationId": "5",
   "locationType": "ROOM",
-  "buildingLocation": "PANTELIMON"
+  "buildingLocation": "LETCANI"
 }
 ```
 
@@ -88,7 +88,7 @@ Creează un contor nou.
   "serialNumber": "WM123456",
   "locationId": "5",
   "locationType": "ROOM",
-  "buildingLocation": "PANTELIMON",
+  "buildingLocation": "LETCANI",
   "readings": []
 }
 ```
@@ -137,7 +137,7 @@ interface IndexCounter {
   serialNumber: string;        // Număr de serie contor
   locationId: string;
   locationType: LocationType;  // "ROOM", "BUILDING", etc.
-  buildingLocation: string;    // "PANTELIMON", "BERCENI"
+  buildingLocation: string;    // "LETCANI", "TOMESTI"
   readings: IndexData[];       // Lista citirilor
 }
 ```

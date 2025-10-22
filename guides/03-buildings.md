@@ -42,7 +42,7 @@ Returnează detaliile unei clădiri specifice.
   "id": 1,
   "name": "Building A",
   "address": "Strada Exemplu nr. 1",
-  "buildingLocation": "PANTELIMON",
+  "buildingLocation": "LETCANI",
   "rooms": [
     {
       "id": 10,
@@ -65,7 +65,7 @@ Creează o clădire nouă.
 {
   "name": "Building B",
   "address": "Strada Nouă nr. 10",
-  "buildingLocation": "BERCENI"
+  "buildingLocation": "TOMESTI"
 }
 ```
 
@@ -76,7 +76,7 @@ Creează o clădire nouă.
   "id": 2,
   "name": "Building B",
   "address": "Strada Nouă nr. 10",
-  "buildingLocation": "BERCENI",
+  "buildingLocation": "TOMESTI",
   "rooms": []
 }
 ```
@@ -219,6 +219,152 @@ Adaugă un spațiu nou la o clădire.
 
 ---
 
+### 10. List Building Locations
+**GET** `/buildings/locations`
+
+Returnează lista de locații disponibile pentru clădiri (enum BuildingLocation).
+
+#### Response
+**Success (200 OK)**
+```json
+[
+  "LETCANI",
+  "TOMESTI"
+]
+```
+
+---
+
+### 11. List Location Types
+**GET** `/buildings/location-types`
+
+Returnează lista de tipuri de locații disponibile (enum LocationType).
+
+#### Response
+**Success (200 OK)**
+```json
+[
+  "OFFICE",
+  "WAREHOUSE",
+  "STORAGE",
+  "RETAIL"
+]
+```
+
+---
+
+### 12. Import Locations from Excel
+**POST** `/buildings/import`
+
+Importă locații (Building, Room, RentalSpace) dintr-un fișier Excel.
+
+#### Request
+- **Content-Type**: `multipart/form-data`
+- **Parameter**: `file` (MultipartFile) - fișier Excel (.xlsx)
+
+#### Excel Format
+Fișierul Excel trebuie să conțină următoarele coloane (header row obligatoriu):
+
+**Notă:** Numele coloanelor sunt configurabile în `application.properties` sub `app.excel.location.columns.*`
+
+Configurare implicită:
+
+| Column | Name | Description | Required | Applies To |
+|--------|------|-------------|----------|------------|
+| 0 | LocationType | Tipul locației: "Building", "Room", "RentalSpace" | ✓ | All |
+| 1 | Name | Numele locației (UNIC în baza de date) | ✓ | All |
+| 2 | OfficialName | Numele oficial (din registre) | ✗ | All |
+| 3 | BuildingLocation | Locația: "LETCANI" sau "TOMESTI" | ✗ | All |
+| 4 | Mp | Suprafața în metri pătrați | ✗ | All |
+| 5 | GroundLevel | true/false pentru parter | ✗ | Room, RentalSpace |
+| 6 | BuildingName | Numele clădirii părinte | ✗ | Room, RentalSpace |
+
+**Customizare nume coloane în `application.properties`:**
+```properties
+app.excel.location.columns.locationType=LocationType
+app.excel.location.columns.name=Name
+app.excel.location.columns.officialName=OfficialName
+app.excel.location.columns.buildingLocation=BuildingLocation
+app.excel.location.columns.mp=Mp
+app.excel.location.columns.groundLevel=GroundLevel
+app.excel.location.columns.buildingName=BuildingName
+```
+
+**Valori valide:**
+- **LocationType**: BUILDING, ROOM, RENTAL_SPACE
+- **BuildingLocation**: LETCANI, TOMESTI
+- **GroundLevel**: true, false, da, yes, 1, x
+
+**Comportament:**
+- Numele locației este **UNIC** - dacă există deja o locație cu același nume, se va face **UPDATE**
+- Dacă nu există, se va face **CREATE**
+- Doar câmpurile prezente în Excel vor fi actualizate
+- Pentru Room/RentalSpace, BuildingName trebuie să fie numele exact al unei clădiri existente
+
+#### Request Example (FormData)
+```typescript
+const formData = new FormData();
+formData.append('file', excelFile);
+
+fetch('/buildings/import', {
+  method: 'POST',
+  body: formData
+});
+```
+
+#### Response
+**Success (200 OK)**
+```json
+{
+  "totalRows": 15,
+  "created": 8,
+  "updated": 5,
+  "skipped": 2,
+  "errors": [
+    "Row 3: Invalid BuildingLocation 'INVALID'. Valid values: LETCANI, TOMESTI",
+    "Row 7: Building with name 'Clădire Inexistentă' not found",
+    "Row 9: Invalid LocationType 'OFFICE'. Valid values: BUILDING, ROOM, RENTALSPACE"
+  ]
+}
+```
+
+---
+
+### 13. Export Locations to Excel
+**GET** `/buildings/export`
+
+Exportă toate locațiile (Building, Room, RentalSpace) într-un fișier Excel.
+
+#### Response
+**Success (200 OK)**
+- **Content-Type**: `application/octet-stream`
+- **Content-Disposition**: `attachment; filename="locations-export.xlsx"`
+- **Body**: fișier Excel binar
+
+#### Usage Example
+```typescript
+// Download Excel file
+const response = await fetch('/buildings/export', {
+  method: 'GET',
+  credentials: 'include'
+});
+
+const blob = await response.blob();
+const url = window.URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = 'locations-export.xlsx';
+document.body.appendChild(a);
+a.click();
+a.remove();
+window.URL.revokeObjectURL(url);
+```
+
+**Excel Structure:**
+Același format ca la import, cu toate locațiile din baza de date.
+
+---
+
 ## Model de Date
 
 ### Building
@@ -226,22 +372,43 @@ Adaugă un spațiu nou la o clădire.
 interface Building {
   id: number;
   name: string;
-  address: string;
-  buildingLocation: string;
+  officialName?: string;
+  location: BuildingLocation; // enum
+  mp?: number;
+  type?: LocationType; // enum
   rooms: Room[];
+}
+```
+
+### Room
+```typescript
+interface Room {
+  id: number;
+  name: string;
+  officialName?: string;
+  location: BuildingLocation;
+  mp?: number;
+  type?: LocationType;
+  groundLevel?: boolean;
+  building?: Building;
 }
 ```
 
 ### RentalSpace (extends Room)
 ```typescript
-interface RentalSpace {
-  id: number;
-  name: string;
-  floor: number;
-  area: number;
-  groundLevel: boolean;
-  isEmpty: boolean;
-  building: Building;
+interface RentalSpace extends Room {
+  rentalAgreement?: TenantRentalData;
+}
+```
+
+### LocationImportResultDto
+```typescript
+interface LocationImportResultDto {
+  totalRows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
 }
 ```
 
@@ -249,7 +416,7 @@ interface RentalSpace {
 
 ## Note pentru Frontend
 1. **buildingLocation** este un parametru obligatoriu pentru majoritatea endpoint-urilor
-2. Valorile posibile pentru `buildingLocation`: "PANTELIMON", "BERCENI", etc.
+2. Valorile posibile pentru `buildingLocation`: "LETCANI", "TOMESTI"
 3. `groundLevel` = `true` înseamnă parter, `false` înseamnă etaj
 4. `isEmpty` indică dacă spațiul este disponibil sau ocupat
 

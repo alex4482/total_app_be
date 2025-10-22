@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BuildingRepository extends JpaRepository<Building, Long> {
+    boolean existsByName(String name);
+    Building findByName(String name);
 }

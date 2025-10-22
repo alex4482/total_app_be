@@ -15,16 +15,18 @@ public abstract class Location {
     @Id
     @GeneratedValue
     protected Long id;
+
+    @Column(unique = true, nullable = false)
     protected String name;
     protected String officialName; // in registre
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     protected List<Observation> observations;
     protected BuildingLocation location;
     protected Integer mp;
     protected LocationType type;
 
     // location → INDEX COUNTERS (inverse side, counters at room level)
-    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
     private List<IndexCounter> counters;
 
     public void addCounter(IndexCounter ic) {
@@ -34,5 +36,17 @@ public abstract class Location {
     public void removeCounter(IndexCounter ic) {
         counters.remove(ic);
         ic.setLocation(null);
+    }
+
+    /**
+     * Populate this location instance with data from DTO.
+     */
+    protected void populateFromDto(CreateLocationDto dto) {
+        this.location = dto.getLocation();
+        this.mp = dto.getMp();
+        this.name = dto.getName();
+        this.observations = dto.getObservations();
+        this.type = dto.getType();
+        this.officialName = dto.getOfficialName();
     }
 }

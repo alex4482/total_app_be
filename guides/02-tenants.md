@@ -11,7 +11,7 @@ Returnează lista de chiriași filtrati după diverse criterii.
 
 #### Query Parameters
 - `active` (Boolean, optional) - Filtrează după status activ/inactiv
-- `buildingLocation` (String, optional) - Filtrează după locație (ex: "PANTELIMON", "BERCENI")
+- `buildingLocation` (String, optional) - Filtrează după locație (ex: "LETCANI", "TOMESTI")
 - `buildingId` (String, optional) - Filtrează după ID clădire
 - `groundLevel` (Boolean, optional) - Filtrează după nivel (parter/etaj)
 
