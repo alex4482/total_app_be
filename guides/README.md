@@ -4,12 +4,16 @@ Acest document oferă o vedere de ansamblu asupra tuturor API-urilor disponibile
 
 ## 📋 Cuprins
 
+### 🌐 API Documentation
 1. [Authentication API](./01-authentication.md) - Autentificare și gestionare tokene JWT
 2. [Tenants API](./02-tenants.md) - Gestionare chiriași (CRUD, import Excel, bulk operations)
 3. [Buildings API](./03-buildings.md) - Gestionare clădiri și spații de închiriat
 4. [Files API](./04-files.md) - Upload, download, și gestionare fișiere
 5. [Email Presets API](./05-email-presets.md) - Șabloane email și trimitere email-uri
 6. [Index Counters API](./06-index-counters.md) - Gestionare contoare și citiri
+
+### 🛠️ Development & Deployment
+7. [Database Migrations](./07-database-migrations.md) - Gestionare schema bază de date cu Flyway
 
 ---
 
@@ -423,12 +427,16 @@ async function sendEmailFromPreset(
 
 Pentru detalii complete despre fiecare endpoint, consultă fișierele individuale:
 
+### API Documentation:
 - **[01-authentication.md](./01-authentication.md)** - Login, refresh token
 - **[02-tenants.md](./02-tenants.md)** - CRUD tenants, import Excel, bulk delete
 - **[03-buildings.md](./03-buildings.md)** - Buildings, rental spaces
 - **[04-files.md](./04-files.md)** - Upload, download, ZIP, delete files
 - **[05-email-presets.md](./05-email-presets.md)** - Email templates și trimitere
 - **[06-index-counters.md](./06-index-counters.md)** - Contoare și citiri
+
+### Development & Deployment:
+- **[07-database-migrations.md](./07-database-migrations.md)** - Gestionare schema DB, Flyway workflow, securitate
 
 ---
 

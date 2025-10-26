@@ -1,0 +1,194 @@
+### ==================================
+### TOTAL APP - API Tests
+### ==================================
+### Folosește extensia "REST Client" în Cursor/VSCode
+### sau direct din terminal cu curl
+
+### Variables
+@baseUrl = http://localhost:8080
+@token = YOUR_JWT_TOKEN_HERE
+
+### ==================================
+### 1. HEALTH CHECK & BASE
+### ==================================
+
+### Test if server is running
+GET {{baseUrl}}/ HTTP/1.1
+
+### ==================================
+### 2. AUTHENTICATION
+### ==================================
+
+### Login (obține token JWT)
+# @name login
+POST {{baseUrl}}/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Refresh Token
+POST {{baseUrl}}/api/auth/refresh HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### ==================================
+### 3. TENANTS (Chiriași)
+### ==================================
+
+### Get all tenants
+GET {{baseUrl}}/api/tenants HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Get tenant by ID
+GET {{baseUrl}}/api/tenants/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Create new tenant
+POST {{baseUrl}}/api/tenants HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Test Tenant",
+  "email": "test@example.com",
+  "phone": "0712345678"
+}
+
+### Update tenant
+PUT {{baseUrl}}/api/tenants/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Updated Tenant Name",
+  "email": "updated@example.com",
+  "phone": "0712345678"
+}
+
+### Delete tenant
+DELETE {{baseUrl}}/api/tenants/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### ==================================
+### 4. BUILDINGS (Clădiri)
+### ==================================
+
+### Get all buildings
+GET {{baseUrl}}/api/buildings HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Get building by ID
+GET {{baseUrl}}/api/buildings/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Create new building
+POST {{baseUrl}}/api/buildings HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Test Building",
+  "location": "Bucharest",
+  "address": "Str. Test 123"
+}
+
+### Update building
+PUT {{baseUrl}}/api/buildings/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Updated Building",
+  "location": "Bucharest",
+  "address": "Str. Updated 456"
+}
+
+### ==================================
+### 5. FILES
+### ==================================
+
+### Get all files
+GET {{baseUrl}}/api/files HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Get file by ID
+GET {{baseUrl}}/api/files/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Download file
+GET {{baseUrl}}/api/files/download/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Upload file (multipart)
+POST {{baseUrl}}/api/files/upload HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### ==================================
+### 6. EMAIL
+### ==================================
+
+### Get email presets
+GET {{baseUrl}}/api/email/presets HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Send email
+POST {{baseUrl}}/api/email/send HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "to": "recipient@example.com",
+  "subject": "Test Email",
+  "body": "This is a test email from Total App"
+}
+
+### ==================================
+### 7. INDEX COUNTERS
+### ==================================
+
+### Get all counters
+GET {{baseUrl}}/api/index-counters HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Get counter by ID
+GET {{baseUrl}}/api/index-counters/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### ==================================
+### 8. RENTAL DATA
+### ==================================
+
+### Get rental data for tenant
+GET {{baseUrl}}/api/rental-data/tenant/1 HTTP/1.1
+Authorization: Bearer {{token}}
+
+### Create rental data
+POST {{baseUrl}}/api/rental-data HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "tenantId": 1,
+  "buildingId": 1,
+  "monthlyRent": 1500.00,
+  "startDate": "2024-01-01"
+}
+
+### ==================================
+### Notes:
+### - Înlocuiește {{token}} cu JWT token-ul obținut din /api/auth/login
+### - Pentru upload files, ajustează path-ul la fișier
+### - Unele endpoint-uri pot diferi, verifică controller-ele pentru URL-uri exacte
+### ==================================
+
