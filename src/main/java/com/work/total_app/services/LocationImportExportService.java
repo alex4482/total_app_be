@@ -127,6 +127,12 @@ public class LocationImportExportService {
                             }
                         }
 
+                        if (location == null) {
+                            errors.add("Row " + (i + 1) + ": Location with name '" + name + "' not found");
+                            skipped++;
+                            continue;
+                        }
+
                         // Update common fields
                         location.setName(name);
                         location.setType(locationType);

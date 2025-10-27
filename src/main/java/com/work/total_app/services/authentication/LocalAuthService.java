@@ -1,5 +1,6 @@
 package com.work.total_app.services.authentication;
 
+import com.work.total_app.config.AppAuthProperties;
 import com.work.total_app.models.authentication.AuthTokens;
 import com.work.total_app.models.authentication.LoginRequest;
 import com.work.total_app.models.authentication.RefreshTokenState;
@@ -29,10 +30,11 @@ public class LocalAuthService implements AuthenticationService {
     @Autowired
     private TokenRepository tokenRepository;
 
+    @Autowired
+    private AppAuthProperties appAuthProperties;
+
     private final BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
 
-    @Value("${app.auth.universal-password-hash}")
-    private String universalHash;
     @Value("${app.jwt.refresh-ttl-days}")
     private long refreshDays;
 
@@ -40,7 +42,7 @@ public class LocalAuthService implements AuthenticationService {
     @Transactional
     public AuthTokens login(LoginRequest req) {
         String password = req.password();
-        if(!bCrypt.matches(password, universalHash))
+        if(!bCrypt.matches(password, appAuthProperties.getUniversalPasswordHash()))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
 
         String sessionId = UUID.randomUUID().toString();

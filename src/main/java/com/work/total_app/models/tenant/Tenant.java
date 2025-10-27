@@ -2,14 +2,10 @@ package com.work.total_app.models.tenant;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.work.total_app.models.Observation;
-import com.work.total_app.models.building.RentalSpace;
-import com.work.total_app.models.building.RentalSpaceFilter;
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.Predicate;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;

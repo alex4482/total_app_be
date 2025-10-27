@@ -7,7 +7,7 @@ import lombok.Data;
 public class IndexCounterDto
 {
     private String name;
-    private String locationId;
+    private Long locationId;
     private CounterType counterType;
     private LocationType locationType;
     private BuildingLocation buildingLocation;

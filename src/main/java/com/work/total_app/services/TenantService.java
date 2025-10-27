@@ -9,7 +9,6 @@ import com.work.total_app.models.tenant.CreateTenantDto;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.models.tenant.TenantBulkDeleteResultDto;
 import com.work.total_app.repositories.RentalSpaceRepository;
-import com.work.total_app.repositories.TenantRentalDataRepository;
 import com.work.total_app.repositories.TenantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,9 +21,6 @@ public class TenantService {
 
     @Autowired
     private TenantRepository tenantRepository;
-
-    @Autowired
-    private TenantRentalDataRepository tenantRentalRepository;
 
     @Autowired
     private RentalSpaceRepository spaceRepository;

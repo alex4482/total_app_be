@@ -1,5 +1,6 @@
 package com.work.total_app.helpers;
 
+import com.work.total_app.config.EmailerProperties;
 import com.work.total_app.helpers.files.DatabaseHelper;
 import com.work.total_app.helpers.files.FileSystemHelper;
 import com.work.total_app.models.email.EEmailSendStatus;
@@ -13,7 +14,6 @@ import org.simplejavamail.api.mailer.config.TransportStrategy;
 import org.simplejavamail.email.EmailBuilder;
 import org.simplejavamail.mailer.MailerBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -26,17 +26,8 @@ import java.util.UUID;
 @Component
 public class EmailHelper {
 
-    @Value("${emailer.from}")
-    private String fromEmail;
-
-    @Value("${emailer.password}")
-    private String fromPassword;
-
-    @Value("${emailer.server.address}")
-    private String mailServer;
-
-    @Value("${emailer.server.port}")
-    private Integer mailServerPort;
+    @Autowired
+    private EmailerProperties emailerProperties;
 
     @Autowired
     @Lazy
@@ -49,7 +40,7 @@ public class EmailHelper {
         String subject = data.getSubject();
 
         EmailPopulatingBuilder emailBuilder = EmailBuilder.startingBlank()
-                .from(fromEmail)
+                .from(emailerProperties.getFrom())
                 .withSubject(subject)
                 .withPlainText(data.getMessage());
 
@@ -93,7 +84,10 @@ public class EmailHelper {
 
         // TODO: move mailer outside of method to have only 1 ??
         try (Mailer mailer = MailerBuilder
-                .withSMTPServer(mailServer, mailServerPort, fromEmail, fromPassword)
+                .withSMTPServer(emailerProperties.getServer().getAddress(), 
+                               emailerProperties.getServer().getPort(), 
+                               emailerProperties.getFrom(), 
+                               emailerProperties.getPassword())
                 .withTransportStrategy(TransportStrategy.SMTP_TLS)
                 .buildMailer())
         {

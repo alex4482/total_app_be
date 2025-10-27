@@ -5,6 +5,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,13 +27,13 @@ public class RequestsAuthInterceptor extends OncePerRequestFilter {
         }
 
         @Override
-        protected boolean shouldNotFilter(HttpServletRequest req) {
+        protected boolean shouldNotFilter(@NonNull HttpServletRequest req) {
             String p = req.getRequestURI();
             return "OPTIONS".equalsIgnoreCase(req.getMethod()) || allowed.contains(p);
         }
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+        protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain)
       throws ServletException, IOException {
 
             String token = resolver.resolve(request);

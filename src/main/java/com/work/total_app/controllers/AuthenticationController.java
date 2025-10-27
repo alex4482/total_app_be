@@ -2,7 +2,6 @@ package com.work.total_app.controllers;
 
 import com.work.total_app.models.authentication.*;
 import com.work.total_app.services.authentication.AuthenticationService;
-import com.work.total_app.services.authentication.JwtService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,14 +18,11 @@ public class AuthenticationController {
     @Autowired
     private AuthenticationService authService;
 
-    @Autowired
-    private JwtService jwtService;
-
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(@RequestBody LoginRequest authRequest) {
         if (authRequest == null || authRequest.password() == null) {
             log.info("Returning forbidden for request <{}>", authRequest);
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); 
         }
         AuthTokens tokens;
         try {
@@ -34,11 +30,11 @@ public class AuthenticationController {
         }
         catch (ResponseStatusException e)
         {
-            return new ResponseEntity<>(null, HttpStatus.UNAUTHORIZED);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); 
         }
         log.info("Token is <{}>", tokens);
         if (tokens == null) {
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         AuthenticationResponse response = AuthenticationResponse.builder()
                 .tokens(tokens)
@@ -51,7 +47,7 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
         AuthTokens newTokens = authService.refreshToken(request);
         if (newTokens == null) {
-            return new ResponseEntity<>(null, HttpStatus.FORBIDDEN);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); 
         }
 
         AuthenticationResponse.AuthenticationResponseBuilder response = AuthenticationResponse.builder();

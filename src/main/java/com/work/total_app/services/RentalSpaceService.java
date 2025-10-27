@@ -83,7 +83,7 @@ public class RentalSpaceService {
 
     public Room updateSpace(Long spaceId, CreateLocationDto dto) {
         // Find the location by ID and determine its type
-        Location location = locationRepository.findById(String.valueOf(spaceId))
+        Location location = locationRepository.findById(spaceId)
                 .orElseThrow(() -> new NotFoundException("Space not found with id: " + spaceId));
 
         if (!(location instanceof Room room)) {
@@ -122,7 +122,7 @@ public class RentalSpaceService {
             throw new ValidationException("No space id provided for deletion.");
         }
 
-        Location location = locationRepository.findById(String.valueOf(spaceId))
+        Location location = locationRepository.findById(spaceId)
                 .orElseThrow(() -> new NotFoundException("Space not found with id: " + spaceId));
 
         if (!(location instanceof Room)) {
@@ -134,7 +134,7 @@ public class RentalSpaceService {
     }
 
     public Room updateRoom(Long roomId, CreateLocationDto dto) {
-        Room room = locationRepository.findById(String.valueOf(roomId))
+        Room room = locationRepository.findById(roomId)
                 .filter(loc -> loc instanceof Room)
                 .map(loc -> (Room) loc)
                 .orElseThrow(() -> new NotFoundException("Room not found with id: " + roomId));

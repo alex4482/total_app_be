@@ -220,21 +220,6 @@ public class TenantImportService {
         return result;
     }
 
-    /**
-     * Parse boolean from various string representations.
-     */
-    private Boolean parseBoolean(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        String normalized = value.trim().toLowerCase();
-        return normalized.equals("true") ||
-               normalized.equals("yes") ||
-               normalized.equals("da") ||
-               normalized.equals("1") ||
-               normalized.equals("x");
-    }
-
     private String getCellValueAsString(Cell cell) {
         if (cell == null) return null;
 

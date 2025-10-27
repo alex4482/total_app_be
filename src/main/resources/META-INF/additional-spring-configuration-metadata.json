@@ -1,0 +1,126 @@
+{
+  "properties": [
+    {
+      "name": "emailer.from",
+      "type": "java.lang.String",
+      "description": "Email address to use as sender (FROM field) for outgoing emails."
+    },
+    {
+      "name": "emailer.password",
+      "type": "java.lang.String",
+      "description": "Password or app password for email authentication."
+    },
+    {
+      "name": "emailer.server.address",
+      "type": "java.lang.String",
+      "description": "SMTP server address for sending emails (e.g., smtp.gmail.com)."
+    },
+    {
+      "name": "emailer.server.port",
+      "type": "java.lang.Integer",
+      "description": "SMTP server port (typically 587 for TLS or 465 for SSL)."
+    },
+    {
+      "name": "app.auth.universal-password-hash",
+      "type": "java.lang.String",
+      "description": "BCrypt hash of the universal password for authentication. Can be overridden via UNIVERSAL_PASSWORD_HASH environment variable."
+    },
+    {
+      "name": "app.jwt.refresh-ttl-days",
+      "type": "java.lang.Long",
+      "description": "Number of days until refresh token expires."
+    },
+    {
+      "name": "app.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key for JWT token signing."
+    },
+    {
+      "name": "app.storage.baseDir",
+      "type": "java.lang.String",
+      "description": "Base directory for file storage."
+    },
+    {
+      "name": "app.storage.templates.TENANT",
+      "type": "java.lang.String",
+      "description": "Path template for tenant files. Supports placeholders like {tenantName}."
+    },
+    {
+      "name": "app.storage.templates.BUILDING",
+      "type": "java.lang.String",
+      "description": "Path template for building files. Supports placeholders like {buildingLocation}, {buildingName}."
+    },
+    {
+      "name": "app.storage.templates.ROOM",
+      "type": "java.lang.String",
+      "description": "Path template for room files. Supports placeholders like {buildingLocation}, {buildingName}, {roomName}."
+    },
+    {
+      "name": "app.storage.templates.RENTAL_SPACE",
+      "type": "java.lang.String",
+      "description": "Path template for rental space files. Supports placeholders like {buildingLocation}, {buildingName}, {roomName}."
+    },
+    {
+      "name": "app.storage.templates.EMAIL_DATA",
+      "type": "java.lang.String",
+      "description": "Path template for email data files. Supports placeholder {emailThreadKey}."
+    },
+    {
+      "name": "app.storage.templates.BUILDING_LOCATION",
+      "type": "java.lang.String",
+      "description": "Path template for building location files. Supports placeholder {buildingLocation}."
+    },
+    {
+      "name": "app.storage.templates.FIRM",
+      "type": "java.lang.String",
+      "description": "Path template for firm files. Supports placeholder {firmName}."
+    },
+    {
+      "name": "app.storage.templates.CAR",
+      "type": "java.lang.String",
+      "description": "Path template for car files. Supports placeholder {licensePlate}."
+    },
+    {
+      "name": "app.storage.templates.OTHER",
+      "type": "java.lang.String",
+      "description": "Path template for other files. Supports placeholders {ownerType}, {ownerId}."
+    },
+    {
+      "name": "app.excel.location.columns.locationType",
+      "type": "java.lang.String",
+      "description": "Excel column name for location type."
+    },
+    {
+      "name": "app.excel.location.columns.name",
+      "type": "java.lang.String",
+      "description": "Excel column name for location name."
+    },
+    {
+      "name": "app.excel.location.columns.officialName",
+      "type": "java.lang.String",
+      "description": "Excel column name for official location name."
+    },
+    {
+      "name": "app.excel.location.columns.buildingLocation",
+      "type": "java.lang.String",
+      "description": "Excel column name for building location."
+    },
+    {
+      "name": "app.excel.location.columns.mp",
+      "type": "java.lang.String",
+      "description": "Excel column name for square meters."
+    },
+    {
+      "name": "app.excel.location.columns.groundLevel",
+      "type": "java.lang.String",
+      "description": "Excel column name for ground level indicator."
+    },
+    {
+      "name": "app.excel.location.columns.buildingName",
+      "type": "java.lang.String",
+      "description": "Excel column name for building name."
+    }
+  ]
+}
+
+

@@ -2,7 +2,6 @@ package com.work.total_app.models.tenant;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.work.total_app.models.building.RentalSpace;
-import com.work.total_app.models.reading.IndexData;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
