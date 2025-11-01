@@ -1,15 +1,18 @@
 package com.work.total_app;
 
+import com.work.total_app.config.EmailerProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import java.io.File;
 import java.nio.file.Paths;
 
 @Log4j2
 @SpringBootApplication
+@EnableConfigurationProperties(EmailerProperties.class)
 public class TotalAppApplication {
 
 	public static void main(String[] args) {

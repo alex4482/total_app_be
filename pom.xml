@@ -147,6 +147,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Configuration processor pentru IDE autocomplete -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
 	<dependency>
 		<groupId>org.simplejavamail</groupId>
 		<artifactId>simple-java-mail</artifactId>
