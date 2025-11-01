@@ -51,6 +51,20 @@ public class EmailService {
         return repository.save(preset);
     }
 
+    public EmailPreset updateInvoicePreset(Integer id, EmailPreset preset) {
+        EmailPreset existing = repository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Preset not found with id: " + id));
+        
+        // Actualizează toate câmpurile
+        existing.setName(preset.getName());
+        existing.setSubject(preset.getSubject());
+        existing.setMessage(preset.getMessage());
+        existing.setRecipients(preset.getRecipients());
+        existing.setKeywords(preset.getKeywords());
+        
+        return repository.save(existing);
+    }
+
     public void deleteInvoicePreset(Integer id) {
         repository.deleteById(id);
     }

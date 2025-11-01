@@ -58,6 +58,13 @@ public class EmailController {
         return service.saveSingleInvoicePreset(preset);
     }
 
+    @PutMapping("/{id}")
+    @ResponseBody
+    public EmailPreset updateInvoicePreset(@PathVariable Integer id, @RequestBody EmailPreset preset)
+    {
+        return service.updateInvoicePreset(id, preset);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseBody
     public void deleteInvoicePreset(@PathVariable Integer id)

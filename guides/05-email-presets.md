@@ -115,7 +115,45 @@ Salvează mai multe preset-uri simultan. Preset-urile existente sunt păstrate �
 
 ---
 
-### 4. Delete Preset
+### 4. Update Preset
+**PUT** `/email-presets/{id}`
+
+Actualizează un preset existent pe baza ID-ului.
+
+#### Path Parameters
+- `id` (Integer, **required**) - ID-ul preset-ului de actualizat
+
+#### Request Body
+```json
+{
+  "name": "Facturi Lunare Actualizat",
+  "subject": "Factura pentru luna {luna}",
+  "message": "Bună ziua,\n\nVă trimitem factura pentru luna curentă.",
+  "recipients": ["email1@example.com", "email2@example.com"],
+  "keywords": ["factura", "plata", "scadenta"]
+}
+```
+
+**Notă:** Nu este necesar să incluzi câmpul `id` în body - se folosește cel din URL.
+
+#### Response (200 OK)
+```json
+{
+  "id": 1,
+  "name": "Facturi Lunare Actualizat",
+  "subject": "Factura pentru luna {luna}",
+  "message": "Bună ziua,\n\nVă trimitem factura pentru luna curentă.",
+  "recipients": ["email1@example.com", "email2@example.com"],
+  "keywords": ["factura", "plata", "scadenta"]
+}
+```
+
+**Errors:**
+- `500 Internal Server Error` - Preset-ul nu există (mesaj: "Preset not found with id: {id}")
+
+---
+
+### 5. Delete Preset
 **DELETE** `/email-presets/{id}`
 
 Șterge un preset de email.
@@ -131,7 +169,7 @@ Salvează mai multe preset-uri simultan. Preset-urile existente sunt păstrate �
 
 ---
 
-### 5. Send Emails
+### 6. Send Emails
 **POST** `/email-presets/send-emails`
 
 Trimite email-uri către destinatari. Fișierele atașate trebuie să fie din **temp upload** (ID-uri temporare).
