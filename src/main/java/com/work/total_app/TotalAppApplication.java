@@ -34,9 +34,9 @@ public class TotalAppApplication {
 				log.info("Using default log4j2.properties from classpath (resources)");
 			}
 		}
-		catch (Exception e)
-		{
-			log.error(e.toString());
-		}
+	catch (Exception e)
+	{
+		log.error("Error loading log4j2 configuration: {}", e.getMessage(), e);
+	}
 	}
 }

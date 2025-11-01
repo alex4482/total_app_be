@@ -28,6 +28,11 @@ public class EmailerProperties {
      */
     private Server server = new Server();
     
+    /**
+     * IMAP server configuration for saving sent emails
+     */
+    private Imap imap = new Imap();
+    
     @Data
     public static class Server {
         /**
@@ -39,6 +44,29 @@ public class EmailerProperties {
          * SMTP server port (typically 587 for TLS or 465 for SSL)
          */
         private Integer port;
+    }
+    
+    @Data
+    public static class Imap {
+        /**
+         * IMAP server address (e.g., imap.gmail.com)
+         */
+        private String address;
+        
+        /**
+         * IMAP server port (typically 993 for SSL)
+         */
+        private Integer port = 993;
+        
+        /**
+         * Enable/disable IMAP sent folder saving
+         */
+        private boolean enabled = true;
+        
+        /**
+         * Name of the Sent folder (default "Sent")
+         */
+        private String sentFolderName = "Sent";
     }
 }
 
