@@ -1,12 +1,13 @@
 package com.work.total_app.controllers;
 
 import com.work.total_app.helpers.files.DatabaseHelper;
+import com.work.total_app.models.api.ApiResponse;
+import com.work.total_app.models.file.FileCommitResultDto;
 import com.work.total_app.models.file.FileDto;
 import com.work.total_app.models.file.OwnerType;
 import com.work.total_app.models.file.OwnerRef;
 import com.work.total_app.services.FileCommitService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -42,18 +43,20 @@ public class FileQueryController {
      */
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<List<FileDto>> listByOwner(
+    public ResponseEntity<ApiResponse<List<FileDto>>> listByOwner(
             @RequestParam("ownerType") String ownerType,
             @RequestParam("ownerId") Long ownerId
     ) {
         if (ownerType == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Owner type is required"));
         }
         final OwnerType type;
         try {
             type = OwnerType.valueOf(ownerType.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid owner type: " + ownerType));
         }
 
         var list = databaseHelper.listByOwner(type, ownerId).stream()
@@ -70,7 +73,7 @@ public class FileQueryController {
                         f.getUploadedAt() != null ? f.getUploadedAt().toString() : null
                 ))
                 .toList();
-        return ResponseEntity.ok(list);
+        return ResponseEntity.ok(ApiResponse.success(list));
     }
 
     /**
@@ -83,41 +86,42 @@ public class FileQueryController {
      * @return List of committed files with permanent IDs and download URLs
      */
     @PostMapping("/commit")
-    public ResponseEntity<?> commitFiles(
+    public ResponseEntity<ApiResponse<FileCommitResultDto>> commitFiles(
             @RequestParam("ownerType") String ownerType,
             @RequestParam("ownerId") Long ownerId,
             @RequestParam("tempIds") List<UUID> tempIds,
             @RequestParam(value = "overwrite", defaultValue = "false") boolean overwrite
     ) {
         if (ownerType == null || ownerId == null || tempIds == null || tempIds.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Missing required parameters: ownerType, ownerId, and tempIds");
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Missing required parameters: ownerType, ownerId, and tempIds"));
         }
 
         final OwnerType type;
         try {
             type = OwnerType.valueOf(ownerType.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Invalid ownerType. Valid values: " + String.join(", ",
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid ownerType. Valid values: " + String.join(", ",
                             java.util.Arrays.stream(OwnerType.values())
                                     .map(Enum::name)
-                                    .toArray(String[]::new)));
+                                    .toArray(String[]::new))));
         }
 
-        try {
-            OwnerRef owner = new OwnerRef(type, ownerId);
-            List<FileDto> result = fileCommitService.commit(owner, tempIds, overwrite);
-            return ResponseEntity.ok(result);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Invalid request: " + e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("File conflict: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to commit files: " + e.getMessage());
+        OwnerRef owner = new OwnerRef(type, ownerId);
+        FileCommitResultDto result = fileCommitService.commitBulk(owner, tempIds, overwrite);
+        
+        // Determine success message based on results
+        String message;
+        if (result.getFailedCount() == 0) {
+            message = String.format("All %d files committed successfully", result.getSuccessCount());
+        } else if (result.getSuccessCount() == 0) {
+            message = String.format("All %d files failed to commit", result.getFailedCount());
+        } else {
+            message = String.format("Committed %d out of %d files successfully", 
+                    result.getSuccessCount(), result.getTotalFiles());
         }
+        
+        return ResponseEntity.ok(ApiResponse.success(message, result));
     }
 }

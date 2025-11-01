@@ -1,10 +1,12 @@
 package com.work.total_app.controllers;
 
+import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.reading.*;
 import com.work.total_app.services.IndexCounterService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,20 +30,25 @@ public class IndexCounterController {
     }
 
     @GetMapping("/{id}")
-    public IndexCounter listCounter(@PathVariable Long id)
+    public ResponseEntity<ApiResponse<IndexCounter>> listCounter(@PathVariable Long id)
     {
-        return counterService.getCounter(id);
+        IndexCounter counter = counterService.getCounter(id);
+        return ResponseEntity.ok(ApiResponse.success(counter));
     }
 
     @PostMapping
-    public IndexCounter addCounter(@RequestBody IndexCounterDto icd)
+    public ResponseEntity<ApiResponse<IndexCounter>> addCounter(@RequestBody IndexCounterDto icd)
     {
-        return counterService.saveCounter(icd);
+        IndexCounter saved = counterService.saveCounter(icd);
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success("Counter created successfully", saved));
     }
 
     @PostMapping("/data")
-    public IndexData addData(@RequestBody IndexDataDto iData)
+    public ResponseEntity<ApiResponse<IndexData>> addData(@RequestBody IndexDataDto iData)
     {
-        return counterService.addData(iData);
+        IndexData data = counterService.addData(iData);
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success("Index data added successfully", data));
     }
 }

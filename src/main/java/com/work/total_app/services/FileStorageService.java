@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.*;
+import lombok.extern.log4j.Log4j2;
 
 /**
  * Coordinates file storage across DB and filesystem.
@@ -26,6 +27,7 @@ import java.util.*;
  *  - Use transaction synchronization to move files on the filesystem only after DB commit
  */
 @Service
+@Log4j2
 public class FileStorageService {
 
     @Autowired
@@ -170,6 +172,68 @@ public class FileStorageService {
         });
 
         return result;
+    }
+
+    /**
+     * Upload multiple files to temporary storage with detailed result tracking.
+     * Each file is uploaded in its own transaction, so failures don't affect other files.
+     * 
+     * @param batchId - Batch ID for grouping files
+     * @param files - List of files to upload
+     * @return Detailed result with success/failure for each file
+     */
+    public TempUploadResultDto uploadTempBatchBulk(UUID batchId, List<MultipartFile> files) {
+        // Generate batch ID if not provided
+        UUID actualBatchId = batchId != null ? batchId : UUID.randomUUID();
+        
+        TempUploadResultDto result = new TempUploadResultDto();
+        result.setTotalFiles(files.size());
+        result.setBatchId(actualBatchId.toString());
+        
+        for (MultipartFile mf : files) {
+            String filename = mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "unnamed";
+            
+            try {
+                TempUploadDto dto = uploadTempSingle(actualBatchId, mf);
+                result.getSuccessfulFiles().add(dto);
+                result.setSuccessCount(result.getSuccessCount() + 1);
+                
+            } catch (Exception e) {
+                log.error("Failed to upload file {}: {}", filename, e.getMessage(), e);
+                TempUploadResultDto.FailedUpload failed = new TempUploadResultDto.FailedUpload();
+                failed.setFilename(filename);
+                failed.setReason(e.getMessage());
+                result.getFailedFiles().add(failed);
+                result.setFailedCount(result.getFailedCount() + 1);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Upload a single file to temporary storage in its own transaction.
+     */
+    @Transactional
+    private TempUploadDto uploadTempSingle(UUID batchId, MultipartFile mf) throws Exception {
+        byte[] data = mf.getBytes();
+        String checksum = sha256(data);
+        
+        // Write to temp folder on disk
+        FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, mf.getOriginalFilename(), data);
+
+        // Persist a TempUpload row pointing to temp path
+        TempUpload tu = new TempUpload();
+        tu.setBatchId(batchId);
+        tu.setOriginalFilename(mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "unnamed");
+        tu.setContentType(mf.getContentType());
+        tu.setSizeBytes(data.length);
+        tu.setChecksum(checksum);
+        tu.setTempPath(handle.tempPath().toString());
+        databaseHelper.saveTemp(tu);
+
+        return new TempUploadDto(tu.getId(), tu.getBatchId(), tu.getOriginalFilename(),
+                        tu.getContentType(), tu.getSizeBytes());
     }
 
     private static String sha256(byte[] bytes) throws Exception {

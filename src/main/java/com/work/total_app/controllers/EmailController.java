@@ -1,5 +1,6 @@
 package com.work.total_app.controllers;
 
+import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.email.EmailData;
 import com.work.total_app.models.email.EmailPreset;
 import com.work.total_app.models.email.EmailPresetsDto;
@@ -7,6 +8,7 @@ import com.work.total_app.models.email.SendEmailsDto;
 import com.work.total_app.services.EmailService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,53 +24,70 @@ public class EmailController {
 
     @PostMapping("/send-emails")
     @ResponseBody
-    public List<EmailData> sendEmails(@RequestBody SendEmailsDto dto)
+    public ResponseEntity<ApiResponse<List<EmailData>>> sendEmails(@RequestBody SendEmailsDto dto)
     {
-        return service.sendEmails(dto.getData());
+        List<EmailData> failedEmails = service.sendEmails(dto.getData());
+        
+        if (failedEmails.isEmpty()) {
+            return ResponseEntity.ok(ApiResponse.success("All emails sent successfully", null));
+        } else {
+            return ResponseEntity.ok(ApiResponse.error(
+                String.format("Failed to send %d out of %d emails", failedEmails.size(), dto.getData().size()),
+                failedEmails
+            ));
+        }
     }
 
     @GetMapping
     @ResponseBody
-    public EmailPresetsDto getInvoicePresets()
+    public ResponseEntity<ApiResponse<EmailPresetsDto>> getInvoicePresets()
     {
         List<EmailPreset> presets = service.getInvoicePresets();
         EmailPresetsDto dto = new EmailPresetsDto();
         dto.setPresets(presets);
-        return dto;
+        return ResponseEntity.ok(ApiResponse.success(dto));
     }
 
     @PostMapping("/bulk")
     @ResponseBody
-    public EmailPresetsDto postInvoicePresets(@RequestBody EmailPresetsDto presetsDto)
+    public ResponseEntity<ApiResponse<EmailPresetsDto>> postInvoicePresets(@RequestBody EmailPresetsDto presetsDto)
     {
         List<EmailPreset> savedPresets = service.saveInvoicePresets(presetsDto.getPresets());
-        if (savedPresets.size() != presetsDto.getPresets().size())
-        {
-            // TODO: log error
+        
+        if (savedPresets.size() != presetsDto.getPresets().size()) {
+            log.error("Failed to save all presets. Expected: {}, Saved: {}", presetsDto.getPresets().size(), savedPresets.size());
+            return ResponseEntity.status(500).body(ApiResponse.error(
+                "Failed to save all presets",
+                new EmailPresetsDto()
+            ));
         }
+        
         EmailPresetsDto dto = new EmailPresetsDto();
         dto.setPresets(savedPresets);
-        return dto;
+        return ResponseEntity.ok(ApiResponse.success("Presets saved successfully", dto));
     }
 
     @PostMapping
     @ResponseBody
-    public EmailPreset postSingleInvoicePreset(@RequestBody EmailPreset preset)
+    public ResponseEntity<ApiResponse<EmailPreset>> postSingleInvoicePreset(@RequestBody EmailPreset preset)
     {
-        return service.saveSingleInvoicePreset(preset);
+        EmailPreset saved = service.saveSingleInvoicePreset(preset);
+        return ResponseEntity.ok(ApiResponse.success("Preset saved successfully", saved));
     }
 
     @PutMapping("/{id}")
     @ResponseBody
-    public EmailPreset updateInvoicePreset(@PathVariable Integer id, @RequestBody EmailPreset preset)
+    public ResponseEntity<ApiResponse<EmailPreset>> updateInvoicePreset(@PathVariable Integer id, @RequestBody EmailPreset preset)
     {
-        return service.updateInvoicePreset(id, preset);
+        EmailPreset updated = service.updateInvoicePreset(id, preset);
+        return ResponseEntity.ok(ApiResponse.success("Preset updated successfully", updated));
     }
 
     @DeleteMapping("/{id}")
     @ResponseBody
-    public void deleteInvoicePreset(@PathVariable Integer id)
+    public ResponseEntity<ApiResponse<Void>> deleteInvoicePreset(@PathVariable Integer id)
     {
         service.deleteInvoicePreset(id);
+        return ResponseEntity.ok(ApiResponse.success("Preset deleted successfully", null));
     }
 }

@@ -1,6 +1,7 @@
 package com.work.total_app.controllers;
 
 import com.work.total_app.config.LocationExcelColumnConfig;
+import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.building.*;
 import com.work.total_app.models.reading.LocationType;
 import com.work.total_app.services.BuildingService;
@@ -116,65 +117,79 @@ public class BuildingController {
 
     @GetMapping("/{bid}")
     @ResponseBody
-    public Building getBuilding(@PathVariable Long bid)
+    public ResponseEntity<ApiResponse<Building>> getBuilding(@PathVariable Long bid)
     {
-        return buildingService.getBuilding(bid);
+        Building building = buildingService.getBuilding(bid);
+        if (building == null) {
+            return ResponseEntity.status(404)
+                    .body(ApiResponse.error("Building not found with id: " + bid));
+        }
+        return ResponseEntity.ok(ApiResponse.success(building));
     }
 
     @PostMapping
     @ResponseBody
-    public Building addBuilding(@RequestBody CreateLocationDto cld)
+    public ResponseEntity<ApiResponse<Building>> addBuilding(@RequestBody CreateLocationDto cld)
     {
         Building b = Building.fromDto(cld);
-        return buildingService.addBuilding(b);
+        Building saved = buildingService.addBuilding(b);
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success("Building created successfully", saved));
     }
 
     @PatchMapping("/{bid}")
     @ResponseBody
-    public Building updateBuilding(@PathVariable Long bid, @RequestBody CreateLocationDto dto)
+    public ResponseEntity<ApiResponse<Building>> updateBuilding(@PathVariable Long bid, @RequestBody CreateLocationDto dto)
     {
         log.info("Updating building with id: {}", bid);
-        return buildingService.updateBuilding(bid, dto);
+        Building updated = buildingService.updateBuilding(bid, dto);
+        return ResponseEntity.ok(ApiResponse.success("Building updated successfully", updated));
     }
 
     @DeleteMapping("/{bid}")
     @ResponseBody
-    public void deleteBuilding(@PathVariable Long bid)
+    public ResponseEntity<ApiResponse<Void>> deleteBuilding(@PathVariable Long bid)
     {
         log.info("Deleting building with id: {}", bid);
         buildingService.deleteBuilding(bid);
+        return ResponseEntity.ok(ApiResponse.success("Building deleted successfully", null));
     }
 
     @GetMapping({"/spaces/{sid}", "/{bid}/spaces/{sid}"})
     @ResponseBody
-    public RentalSpace getSpace(@PathVariable Long bid, @PathVariable Long sid)
+    public ResponseEntity<ApiResponse<RentalSpace>> getSpace(@PathVariable Long bid, @PathVariable Long sid)
     {
-        return spaceService.getSpace(bid, sid);
+        RentalSpace space = spaceService.getSpace(bid, sid);
+        return ResponseEntity.ok(ApiResponse.success(space));
     }
 
     @PostMapping({"/spaces", "/{bid}/spaces"})
     @ResponseBody
-    public Room addSpace(@PathVariable(required = false) Long bid,
+    public ResponseEntity<ApiResponse<Room>> addSpace(@PathVariable(required = false) Long bid,
                          @RequestBody CreateLocationDto dto)
     {
-        return spaceService.addSpace(bid, dto);
+        Room saved = spaceService.addSpace(bid, dto);
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success("Space created successfully", saved));
     }
 
     @PatchMapping("/spaces/{spaceId}")
     @ResponseBody
-    public Room updateSpace(@PathVariable Long spaceId,
+    public ResponseEntity<ApiResponse<Room>> updateSpace(@PathVariable Long spaceId,
                             @RequestBody CreateLocationDto dto)
     {
         log.info("Updating space with id: {}", spaceId);
-        return spaceService.updateSpace(spaceId, dto);
+        Room updated = spaceService.updateSpace(spaceId, dto);
+        return ResponseEntity.ok(ApiResponse.success("Space updated successfully", updated));
     }
 
     @DeleteMapping("/spaces/{spaceId}")
     @ResponseBody
-    public void deleteSpace(@PathVariable Long spaceId)
+    public ResponseEntity<ApiResponse<Void>> deleteSpace(@PathVariable Long spaceId)
     {
         log.info("Deleting space with id: {}", spaceId);
         spaceService.deleteSpace(spaceId);
+        return ResponseEntity.ok(ApiResponse.success("Space deleted successfully", null));
     }
 
     /**
@@ -190,11 +205,18 @@ public class BuildingController {
      */
     @PostMapping("/import")
     @ResponseBody
-    public LocationImportResultDto importLocations(
-            @RequestParam("file") MultipartFile file) throws IOException {
-        log.info("Importing locations from Excel file: {}",
-                file.getOriginalFilename());
-        return locationImportExportService.importLocationsFromExcel(file);
+    public ResponseEntity<ApiResponse<LocationImportResultDto>> importLocations(
+            @RequestParam("file") MultipartFile file) {
+        try {
+            log.info("Importing locations from Excel file: {}",
+                    file.getOriginalFilename());
+            LocationImportResultDto result = locationImportExportService.importLocationsFromExcel(file);
+            return ResponseEntity.ok(ApiResponse.success("Import completed successfully", result));
+        } catch (Exception e) {
+            log.error("Error importing locations", e);
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.error("Failed to import locations: " + e.getMessage()));
+        }
     }
 
     /**

@@ -1,9 +1,11 @@
 package com.work.total_app.controllers;
 
-import com.work.total_app.models.file.TempUploadDto;
+import com.work.total_app.models.api.ApiResponse;
+import com.work.total_app.models.file.TempUploadResultDto;
 import com.work.total_app.services.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,13 +40,23 @@ public class TempUploadController {
      * Accepts files for temporary storage. These can later be "committed" to an owner entity.
      */
     @PostMapping(path="/temp", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public List<TempUploadDto> uploadTemp(
+    public ResponseEntity<ApiResponse<TempUploadResultDto>> uploadTemp(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam(value="batchId", required=false) UUID batchId
-    ) throws Exception {
-        // Generate a grouping ID if caller didn't send one (helps correlate multi-file uploads)
-        if (batchId == null) batchId = UUID.randomUUID();
-        // Delegate to service which writes to temp storage and records metadata
-        return fileStorageService.uploadTempBatch(batchId, files);
+    ) {
+        TempUploadResultDto result = fileStorageService.uploadTempBatchBulk(batchId, files);
+        
+        // Determine success message based on results
+        String message;
+        if (result.getFailedCount() == 0) {
+            message = String.format("All %d files uploaded successfully", result.getSuccessCount());
+        } else if (result.getSuccessCount() == 0) {
+            message = String.format("All %d files failed to upload", result.getFailedCount());
+        } else {
+            message = String.format("Uploaded %d out of %d files successfully", 
+                    result.getSuccessCount(), result.getTotalFiles());
+        }
+        
+        return ResponseEntity.ok(ApiResponse.success(message, result));
     }
 }

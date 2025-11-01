@@ -1,6 +1,8 @@
 package com.work.total_app.controllers;
 
+import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.building.BuildingLocation;
+import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
 import com.work.total_app.models.tenant.CreateTenantDto;
 import com.work.total_app.models.tenant.Tenant;
@@ -52,126 +54,120 @@ public class TenantController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tenant> getTenant(@PathVariable Long id)
+    public ResponseEntity<ApiResponse<Tenant>> getTenant(@PathVariable Long id)
     {
         if (id == null)
         {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid tenant ID"));
         }
         Tenant t = tenantService.getTenant(id);
         if (t == null)
         {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Tenant not found with id: " + id));
         }
-        return new ResponseEntity<>(t, HttpStatus.FOUND);
+        return ResponseEntity.ok(ApiResponse.success(t));
     }
 
     @PostMapping
-    public ResponseEntity<Tenant> addTenant(@RequestBody CreateTenantDto tenant)
+    public ResponseEntity<ApiResponse<Tenant>> addTenant(@RequestBody CreateTenantDto tenant)
     {
         if (tenant == null)
         {
             throw new ValidationException("Body is null when creating new tenant");
         }
 
-        try {
-            Tenant t = tenantService.addTenant(tenant);
-            if (t == null)
-            {
-                return ResponseEntity.internalServerError().build();
-            }
-            return new ResponseEntity<>(t, HttpStatus.CREATED);
-        }
-        catch (Exception e)
+        Tenant t = tenantService.addTenant(tenant);
+        if (t == null)
         {
-            // TODO: log e
-            throw e;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to create tenant"));
         }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tenant created successfully", t));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<Tenant> updateTenant(@PathVariable Long id, @RequestBody CreateTenantDto tenant)
+    public ResponseEntity<ApiResponse<Tenant>> updateTenant(@PathVariable Long id, @RequestBody CreateTenantDto tenant)
     {
         if (tenant == null)
         {
             throw new ValidationException("Body is null when updating tenant");
         }
 
-        try {
-            Tenant t = tenantService.updateTenantDetails(id, tenant);
-            if (t == null)
-            {
-                return ResponseEntity.internalServerError().build();
-            }
-            return new ResponseEntity<>(t, HttpStatus.OK);
-        }
-        catch (Exception e)
+        Tenant t = tenantService.updateTenantDetails(id, tenant);
+        if (t == null)
         {
-            // TODO: log e
-            throw e;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update tenant"));
         }
+        return ResponseEntity.ok(ApiResponse.success("Tenant updated successfully", t));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTenant(@PathVariable Long id)
+    public ResponseEntity<ApiResponse<Void>> deleteTenant(@PathVariable Long id)
     {
         // Validate input early
         if (id == null)
         {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid tenant ID"));
         }
         try
         {
             tenantService.deleteTenant(id);
-            // 204 No Content is the conventional success status for DELETE
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(ApiResponse.success("Tenant deleted successfully", null));
         }
-        catch (com.work.total_app.models.runtime_errors.NotFoundException e)
+        catch (NotFoundException e)
         {
-            // Service signals that the tenant doesn't exist
-            log.info("Delete tenant {} requested but not found", id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
         }
         catch (org.springframework.dao.DataIntegrityViolationException e)
         {
-            // Likely FK constraint: tenant still referenced by other records
             log.warn("Delete tenant {} failed due to referential integrity: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Cannot delete tenant: it is still referenced by other records"));
         }
         catch (Exception e)
         {
-            // Unexpected error path; log with stacktrace for diagnostics
             log.error("Unexpected error deleting tenant {}", id, e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("An unexpected error occurred while deleting tenant"));
         }
     }
 
     @PostMapping("/new-rental-agreement")
-    public ResponseEntity<TenantRentalData> TenantRentSpace(@RequestBody TenantRentalDto dto)
+    public ResponseEntity<ApiResponse<TenantRentalData>> TenantRentSpace(@RequestBody TenantRentalDto dto)
     {
         TenantRentalData trd = tenantRentalService.startNewRent(dto);
         if (trd != null)
         {
-            return new ResponseEntity<>(trd, HttpStatus.CREATED);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success("Rental agreement created successfully", trd));
         }
 
-        return ResponseEntity.internalServerError().build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Failed to create rental agreement"));
     }
 
     @PostMapping("/import")
-    public ResponseEntity<TenantImportResultDto> importTenants(@RequestParam("file") MultipartFile file)
+    public ResponseEntity<ApiResponse<TenantImportResultDto>> importTenants(@RequestParam("file") MultipartFile file)
     {
         if (file == null || file.isEmpty())
         {
             log.warn("Import tenants called with empty file");
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("No file provided or file is empty"));
         }
 
         String filename = file.getOriginalFilename();
         if (filename == null || (!filename.endsWith(".xlsx") && !filename.endsWith(".xls")))
         {
             log.warn("Import tenants called with non-Excel file: {}", filename);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Invalid file type. Only .xlsx and .xls files are allowed"));
         }
 
         try
@@ -179,32 +175,35 @@ public class TenantController {
             TenantImportResultDto result = tenantImportService.importTenantsFromExcel(file);
             log.info("Tenant import completed: {} saved, {} skipped out of {} total rows",
                 result.getSavedCount(), result.getSkippedCount(), result.getTotalRows());
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(ApiResponse.success("Import completed successfully", result));
         }
         catch (Exception e)
         {
             log.error("Error importing tenants from Excel", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to import tenants: " + e.getMessage()));
         }
     }
 
     @DeleteMapping("/bulk-delete")
-    public ResponseEntity<TenantBulkDeleteResultDto> bulkDeleteTenants(@RequestBody List<Long> tenantIds)
+    public ResponseEntity<ApiResponse<TenantBulkDeleteResultDto>> bulkDeleteTenants(@RequestBody List<Long> tenantIds)
     {
         if (tenantIds == null || tenantIds.isEmpty())
         {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("No tenant IDs provided"));
         }
 
         try
         {
             TenantBulkDeleteResultDto result = tenantService.bulkDeleteTenants(tenantIds);
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
         }
         catch (Exception e)
         {
             log.error("Error during bulk delete of tenants", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete tenants: " + e.getMessage()));
         }
     }
 
