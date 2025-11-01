@@ -23,8 +23,21 @@ public class EmailService {
     }
 
     public List<EmailPreset> saveInvoicePresets(List<EmailPreset> presets) {
-        repository.deleteAll();
-        return repository.saveAll(presets);
+        // Nu mai ștergem toate - salvăm fiecare preset individual
+        // Dacă există ID, face UPDATE automat
+        // Dacă nu există ID dar există după nume, face UPDATE
+        // Dacă nu există deloc, face INSERT
+        return repository.saveAll(presets.stream()
+                .map(preset -> {
+                    // Dacă nu are ID, verificăm dacă există după nume
+                    if (preset.getId() == null && preset.getName() != null) {
+                        repository.findByName(preset.getName()).ifPresent(existing -> {
+                            preset.setId(existing.getId());
+                        });
+                    }
+                    return preset;
+                })
+                .toList());
     }
 
     public EmailPreset saveSingleInvoicePreset(EmailPreset preset) {

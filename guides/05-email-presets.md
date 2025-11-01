@@ -66,9 +66,12 @@ Salvează un preset nou sau actualizează unul existent (dacă există deja un p
 ### 3. Bulk Save Presets
 **POST** `/email-presets/bulk`
 
-Salvează mai multe preset-uri simultan (șterge toate preset-urile existente și le înlocuiește cu cele noi).
+Salvează mai multe preset-uri simultan. Preset-urile existente sunt păstrate și actualizate automat.
 
-⚠️ **ATENȚIE:** Această operație **șterge TOATE** preset-urile existente!
+**Comportament:**
+- Dacă presetul trimis are `id` → face **UPDATE** pe preset-ul existent
+- Dacă presetul trimis **NU** are `id` dar există unul cu același `name` → face **UPDATE**
+- Dacă presetul **NU** există deloc → face **INSERT**
 
 #### Request Body
 ```json
