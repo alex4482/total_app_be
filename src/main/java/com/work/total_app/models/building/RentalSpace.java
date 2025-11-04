@@ -37,21 +37,28 @@ public class RentalSpace extends Room {
 
             if (f.buildingId() != null && !f.buildingId().isBlank())
             {
-                p.add(cb.equal(root.get("buildingId"), f.buildingId().trim()));
+                p.add(cb.equal(root.get("building").get("id"), Long.parseLong(f.buildingId().trim())));
             }
             else if (f.buildingLocation() != null){
-                p.add(cb.equal(root.get("buildingLocation"), f.buildingLocation()));
+                p.add(cb.equal(root.get("location"), f.buildingLocation()));
             }
 
+            // Filter by tenant through rentalAgreement
             if (f.empty() != null && f.empty()) {
-                p.add(cb.equal(root.get("tenant_id"), null));
+                // Empty spaces: no rental agreement
+                p.add(cb.isNull(root.get("rentalAgreement")));
             }
             else if (f.empty() != null && f.tenantId() != null && !f.tenantId().isBlank())
             {
-                p.add(cb.equal(root.get("tenant_id"), f.tenantId()));
+                // Specific tenant: join through rentalAgreement -> tenant
+                p.add(cb.equal(
+                    root.get("rentalAgreement").get("tenant").get("id"), 
+                    Long.parseLong(f.tenantId())
+                ));
             }
             else if (f.empty() != null && !f.empty()){
-                p.add(cb.notEqual(root.get("tenant_id"), null));
+                // Occupied spaces: has rental agreement
+                p.add(cb.isNotNull(root.get("rentalAgreement")));
             }
 
             if (f.groundLevel() != null) {

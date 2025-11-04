@@ -39,6 +39,7 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 - 📁 **File Management** - Upload, download, ZIP, storage organizat
 - 📧 **Email System** - Template-uri email, trimitere în bulk cu atașamente
 - 📊 **Index Counters** - Gestiune contoare (apă, gaz, electricitate) și citiri
+- 💾 **Backup & Restore** - Backup automat/manual, export Excel/JSON, Google Drive integration
 - 🗄️ **Database Migrations** - Flyway pentru migrări controlate în producție
 
 ## 🛠️ Tech Stack
@@ -88,7 +89,8 @@ total_app/
 │   ├── 04-files.md
 │   ├── 05-email-presets.md
 │   ├── 06-index-counters.md
-│   └── 07-database-migrations.md
+│   ├── 07-database-migrations.md
+│   └── 08-backup-restore.md
 │
 └── scripts/             # Helper scripts
     ├── run.ps1          # Script pornire Windows
@@ -241,6 +243,7 @@ Documentație completă pentru fiecare endpoint în folder-ul `guides/`:
 - **[Files API](guides/04-files.md)** - Upload, download, ZIP archives
 - **[Email Presets API](guides/05-email-presets.md)** - Template-uri și trimitere email
 - **[Index Counters API](guides/06-index-counters.md)** - Contoare și citiri
+- **[Backup & Restore API](guides/08-backup-restore.md)** - Backup automat/manual, restaurare din JSON/Excel
 
 ### Development & Deployment
 - **[Database Migrations](guides/07-database-migrations.md)** - Workflow Flyway, best practices

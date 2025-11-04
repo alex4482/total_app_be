@@ -1,0 +1,77 @@
+### Backup & Restore API Tests
+### Base URL: http://localhost:8080
+
+@token = YOUR_AUTH_TOKEN_HERE
+
+### 1. List all backups
+GET http://localhost:8080/api/backups
+Authorization: Bearer {{token}}
+
+###
+
+### 2. Get specific backup details
+GET http://localhost:8080/api/backups/backup_2025-11-03_14-30-15_manual
+Authorization: Bearer {{token}}
+
+###
+
+### 3. Create manual backup (return metadata only)
+POST http://localhost:8080/api/backups/create?returnFile=false&description=Test backup
+Authorization: Bearer {{token}}
+
+###
+
+### 4. Create manual backup and download ZIP
+POST http://localhost:8080/api/backups/create?format=zip&description=Backup cu ZIP
+Authorization: Bearer {{token}}
+
+###
+
+### 5. Create manual backup and download Excel
+POST http://localhost:8080/api/backups/create?format=excel&description=Backup cu Excel
+Authorization: Bearer {{token}}
+
+###
+
+### 6. Download backup as ZIP
+GET http://localhost:8080/api/backups/backup_2025-11-03_14-30-15_manual/download/zip
+Authorization: Bearer {{token}}
+
+###
+
+### 7. Download backup as Excel
+GET http://localhost:8080/api/backups/backup_2025-11-03_14-30-15_manual/download/excel
+Authorization: Bearer {{token}}
+
+###
+
+### 8. Restore from JSON backup (WARNING: Deletes all data!)
+POST http://localhost:8080/api/backups/restore
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "backupName": "backup_2025-11-03_14-30-15_manual",
+  "fromExcel": false
+}
+
+###
+
+### 9. Restore from Excel backup (WARNING: Deletes all data!)
+POST http://localhost:8080/api/backups/restore
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "backupName": "backup_2025-11-03_14-30-15_manual",
+  "fromExcel": true
+}
+
+###
+
+### 10. Delete backup
+DELETE http://localhost:8080/api/backups/backup_2025-11-03_14-30-15_manual
+Authorization: Bearer {{token}}
+
+###
+

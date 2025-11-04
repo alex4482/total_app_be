@@ -6,6 +6,7 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -13,6 +14,7 @@ import java.nio.file.Paths;
 @Log4j2
 @SpringBootApplication
 @EnableConfigurationProperties(EmailerProperties.class)
+@EnableScheduling
 public class TotalAppApplication {
 
 	public static void main(String[] args) {

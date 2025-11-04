@@ -1,0 +1,84 @@
+### File Manager API Tests
+### Base URL: http://localhost:8080/api/file-manager
+
+### 1. Get Complete File Tree
+# Returns hierarchical structure of all files and folders
+GET http://localhost:8080/api/file-manager/tree
+Content-Type: application/json
+
+###
+
+### 2. Get File Tree for Specific Path
+# Returns file tree starting from a specific subdirectory
+GET http://localhost:8080/api/file-manager/tree/path?path=uploads
+Content-Type: application/json
+
+###
+
+### 3. Get File Tree for Root (empty path)
+GET http://localhost:8080/api/file-manager/tree/path?path=
+Content-Type: application/json
+
+###
+
+### 4. Get All Files (Flat List)
+# Returns a flat list of all files without folder structure
+GET http://localhost:8080/api/file-manager/files
+Content-Type: application/json
+
+###
+
+### 5. Get Storage Statistics
+# Returns total size, file count, and folder count
+GET http://localhost:8080/api/file-manager/stats
+Content-Type: application/json
+
+###
+
+### Example Response for File Tree:
+# {
+#   "success": true,
+#   "data": {
+#     "name": "FISIERE",
+#     "path": "/",
+#     "type": "folder",
+#     "size": null,
+#     "lastModified": "2025-11-04T00:00:00Z",
+#     "extension": null,
+#     "mimeType": null,
+#     "itemCount": 3,
+#     "children": [
+#       {
+#         "name": "documents",
+#         "path": "/documents",
+#         "type": "folder",
+#         "size": null,
+#         "lastModified": "2025-11-04T00:00:00Z",
+#         "itemCount": 2,
+#         "children": [
+#           {
+#             "name": "report.pdf",
+#             "path": "/documents/report.pdf",
+#             "type": "file",
+#             "size": 1024567,
+#             "lastModified": "2025-11-04T00:00:00Z",
+#             "extension": "pdf",
+#             "mimeType": "application/pdf",
+#             "children": []
+#           }
+#         ]
+#       }
+#     ]
+#   }
+# }
+
+### Example Response for Storage Stats:
+# {
+#   "success": true,
+#   "data": {
+#     "totalSizeBytes": 52428800,
+#     "fileCount": 127,
+#     "folderCount": 15
+#   }
+# }
+
