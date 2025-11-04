@@ -2,8 +2,12 @@
 -- Migration: V3__create_backup_metadata_table.sql
 -- Date: 2025-11-03
 
+-- Create sequence for backup_metadata ID
+CREATE SEQUENCE IF NOT EXISTS backup_metadata_seq START WITH 1 INCREMENT BY 1;
+
+-- Create backup_metadata table
 CREATE TABLE IF NOT EXISTS backup_metadata (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY DEFAULT nextval('backup_metadata_seq'),
     backup_name VARCHAR(255) NOT NULL UNIQUE,
     backup_type VARCHAR(20) NOT NULL CHECK (backup_type IN ('MANUAL', 'AUTOMATIC')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -12,6 +16,9 @@ CREATE TABLE IF NOT EXISTS backup_metadata (
     size_bytes BIGINT,
     description TEXT
 );
+
+-- Link the sequence to the table column
+ALTER SEQUENCE backup_metadata_seq OWNED BY backup_metadata.id;
 
 -- Create index on backup_name for faster lookups
 CREATE INDEX idx_backup_metadata_backup_name ON backup_metadata(backup_name);

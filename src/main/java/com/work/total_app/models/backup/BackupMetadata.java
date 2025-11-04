@@ -15,7 +15,8 @@ import java.time.Instant;
 public class BackupMetadata {
     
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "backup_metadata_seq_gen")
+    @SequenceGenerator(name = "backup_metadata_seq_gen", sequenceName = "backup_metadata_seq", allocationSize = 1)
     private Long id;
     
     @Column(nullable = false, unique = true)
