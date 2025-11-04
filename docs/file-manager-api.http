@@ -1,36 +1,36 @@
 ### File Manager API Tests
-### Base URL: http://localhost:8080/api/file-manager
+### Base URL: http://localhost:8080/file-manager
 
-### 1. Get Complete File Tree
-# Returns hierarchical structure of all files and folders
-GET http://localhost:8080/api/file-manager/tree
+### 1. Get Complete File Tree (Root)
+# Returns hierarchical structure of all files and folders from root
+GET http://localhost:8080/file-manager/tree
 Content-Type: application/json
 
 ###
 
 ### 2. Get File Tree for Specific Path
 # Returns file tree starting from a specific subdirectory
-GET http://localhost:8080/api/file-manager/tree/path?path=uploads
+GET http://localhost:8080/file-manager/tree?path=uploads
 Content-Type: application/json
 
 ###
 
-### 3. Get File Tree for Root (empty path)
-GET http://localhost:8080/api/file-manager/tree/path?path=
+### 3. Get File Tree for Another Path
+GET http://localhost:8080/file-manager/tree?path=documents/2025
 Content-Type: application/json
 
 ###
 
 ### 4. Get All Files (Flat List)
 # Returns a flat list of all files without folder structure
-GET http://localhost:8080/api/file-manager/files
+GET http://localhost:8080/file-manager/files
 Content-Type: application/json
 
 ###
 
 ### 5. Get Storage Statistics
 # Returns total size, file count, and folder count
-GET http://localhost:8080/api/file-manager/stats
+GET http://localhost:8080/file-manager/stats
 Content-Type: application/json
 
 ###

@@ -36,7 +36,7 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 - 🔐 **Autentificare JWT** - Login securizat cu refresh tokens
 - 👥 **Gestionare Tenants** - CRUD complet, import Excel, bulk operations
 - 🏗️ **Buildings & Rental Spaces** - Gestiune clădiri și spații de închiriat
-- 📁 **File Management** - Upload, download, ZIP, storage organizat
+- 📁 **File Management** - Upload, download, ZIP, filesystem storage (metadata în DB)
 - 📧 **Email System** - Template-uri email, trimitere în bulk cu atașamente
 - 📊 **Index Counters** - Gestiune contoare (apă, gaz, electricitate) și citiri
 - 💾 **Backup & Restore** - Backup automat/manual, export Excel/JSON, Google Drive integration

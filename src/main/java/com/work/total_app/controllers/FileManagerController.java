@@ -16,7 +16,7 @@ import java.util.List;
  * Provides endpoints for browsing the file system structure.
  */
 @RestController
-@RequestMapping("/api/file-manager")
+@RequestMapping("/file-manager")
 @Log4j2
 public class FileManagerController {
 
@@ -24,39 +24,22 @@ public class FileManagerController {
     private FileTreeService fileTreeService;
 
     /**
-     * Get the complete file tree structure.
-     * GET /api/file-manager/tree
+     * Get the file tree structure.
+     * GET /file-manager/tree
+     * GET /file-manager/tree?path=/some/folder
      * 
-     * Returns a hierarchical tree structure of all files and folders
-     * starting from the storage base directory.
+     * Returns a hierarchical tree structure of all files and folders.
+     * If path is empty or not provided, returns the complete tree starting from the storage base directory.
+     * If path is provided, returns the tree starting from that subdirectory.
      * 
-     * @return Complete file tree
+     * @param path Relative path from storage base directory (optional)
+     * @return File tree structure
      */
     @GetMapping("/tree")
-    public ResponseEntity<ApiResponse<FileTreeNodeDto>> getFileTree() {
-        try {
-            log.info("Fetching complete file tree");
-            FileTreeNodeDto tree = fileTreeService.getFileTree();
-            return ResponseEntity.ok(ApiResponse.success(tree));
-        } catch (Exception e) {
-            log.error("Error fetching file tree: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch file tree: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Get file tree for a specific subdirectory.
-     * GET /api/file-manager/tree?path=/some/folder
-     * 
-     * @param path Relative path from storage base directory
-     * @return File tree for the specified path
-     */
-    @GetMapping("/tree/path")
-    public ResponseEntity<ApiResponse<FileTreeNodeDto>> getFileTreeByPath(
+    public ResponseEntity<ApiResponse<FileTreeNodeDto>> getFileTree(
             @RequestParam(required = false, defaultValue = "") String path) {
         try {
-            log.info("Fetching file tree for path: {}", path);
+            log.info("Fetching file tree for path: {}", path.isEmpty() ? "root" : path);
             
             FileTreeNodeDto tree = path.isEmpty() 
                 ? fileTreeService.getFileTree()
@@ -76,7 +59,7 @@ public class FileManagerController {
 
     /**
      * Get flat list of all files (no folders, no tree structure).
-     * GET /api/file-manager/files
+     * GET /file-manager/files
      * 
      * Useful for searching or displaying a simple file list.
      * 
@@ -97,7 +80,7 @@ public class FileManagerController {
 
     /**
      * Get storage statistics.
-     * GET /api/file-manager/stats
+     * GET /file-manager/stats
      * 
      * Returns information about total storage usage, file count, and folder count.
      * 

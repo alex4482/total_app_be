@@ -102,7 +102,8 @@ public class FileStorageService {
                         existing.getChecksum(),
                         "/files/" + existing.getId(),
                         existing.getModifiedAt() != null ? existing.getModifiedAt().toString() : null,
-                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null
+                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null,
+                        true // Deduplicated file
                 ));
                 continue;
             }
@@ -117,10 +118,7 @@ public class FileStorageService {
             Path finalPath = fileSystemHelper.buildPermanentPath(owner, finalId, tu.getOriginalFilename());
             Path tempPath = Path.of(tu.getTempPath());
 
-            // 4) Read bytes from TEMP (for BLOB) BEFORE commit completes
-            byte[] data = Files.readAllBytes(tempPath);
-
-            // 5) Persist DB row with BLOB
+            // 4) Persist DB row (metadata only - file content is on filesystem)
             FileAsset fa = new FileAsset();
             fa.setId(finalId);
             fa.setOwnerType(owner.type());
@@ -129,7 +127,6 @@ public class FileStorageService {
             fa.setContentType(tu.getContentType());
             fa.setSizeBytes(tu.getSizeBytes());
             fa.setChecksum(tu.getChecksum());
-            fa.setData(data); // comment or remove this if you don't want to store BLOBs
             // uploadedAt is set automatically by @PrePersist
             databaseHelper.save(fa);
 
@@ -153,9 +150,10 @@ public class FileStorageService {
                     fa.getContentType(),
                     fa.getSizeBytes(),
                     fa.getChecksum(),
-                    "/api/files/" + fa.getId(),
+                    "/files/" + fa.getId(),
                     fa.getModifiedAt() != null ? fa.getModifiedAt().toString() : null,
-                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null
+                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null,
+                    false // New file, not a duplicate
             ));
         }
 

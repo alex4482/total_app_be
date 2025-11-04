@@ -28,6 +28,9 @@ public interface FileAssetRepository extends JpaRepository<FileAsset, UUID> {
     /** Find an owner's file by checksum (used for deduplication flow). */
     Optional<FileAsset> findByOwnerTypeAndOwnerIdAndChecksum(OwnerType type, Long ownerId, String checksum);
 
+    /** Find an owner's file by original filename. */
+    Optional<FileAsset> findByOwnerTypeAndOwnerIdAndOriginalFilename(OwnerType type, Long ownerId, String originalFilename);
+
     /** Delete all files belonging to an owner. */
     void deleteAllByOwnerTypeAndOwnerId(OwnerType ownerType, Long ownerId);
 }

@@ -45,11 +45,19 @@ public class DatabaseHelper {
         return fileRepo.findByOwnerTypeAndOwnerIdAndChecksum(type, ownerId, checksum);
     }
 
+    /** Find an asset for owner by filename. */
+    public Optional<FileAsset> findByOwnerAndName(OwnerType type, Long ownerId, String name) {
+        return fileRepo.findByOwnerTypeAndOwnerIdAndOriginalFilename(type, ownerId, name);
+    }
+
     /** Find an asset by its ID. */
     public Optional<FileAsset> findById(UUID id) { return fileRepo.findById(id); }
 
     /** Delete a file asset by its ID. */
     public void deleteById(UUID id) { fileRepo.deleteById(id); }
+
+    /** Delete a file asset (alias for deleteById for clarity). */
+    public void deleteFileAsset(UUID id) { fileRepo.deleteById(id); }
 
     /** List all assets belonging to a given owner. */
     public List<FileAsset> listByOwner(OwnerType type, Long ownerId) {

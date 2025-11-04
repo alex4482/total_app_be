@@ -9,16 +9,26 @@ All files are stored in the base directory configured by `app.storage.baseDir` (
 ## Base URL
 
 ```
-/api/file-manager
+/file-manager
 ```
 
 ## Endpoints
 
-### 1. Get Complete File Tree
+### 1. Get File Tree
 
-Retrieves the complete hierarchical structure of all files and folders.
+Retrieves the hierarchical structure of files and folders. If no path is provided, returns the complete tree from the root. If a path is provided, returns the tree starting from that subdirectory.
 
-**Endpoint:** `GET /api/file-manager/tree`
+**Endpoint:** `GET /file-manager/tree`
+
+**Query Parameters:**
+- `path` (optional, default: ""): Relative path from storage base directory
+
+**Examples:**
+```
+GET /file-manager/tree               # Complete tree from root
+GET /file-manager/tree?path=documents  # Tree from /documents folder
+GET /file-manager/tree?path=documents/2025  # Tree from /documents/2025 folder
+```
 
 **Response:**
 ```json
@@ -71,31 +81,13 @@ Retrieves the complete hierarchical structure of all files and folders.
 }
 ```
 
-### 2. Get File Tree for Specific Path
-
-Retrieves the file tree starting from a specific subdirectory.
-
-**Endpoint:** `GET /api/file-manager/tree/path`
-
-**Query Parameters:**
-- `path` (optional, default: ""): Relative path from storage base directory
-
-**Examples:**
-```
-GET /api/file-manager/tree/path?path=documents
-GET /api/file-manager/tree/path?path=documents/2025
-GET /api/file-manager/tree/path (empty path = root)
-```
-
-**Response:** Same structure as complete file tree, but starting from the specified path.
-
 **Security:** The API validates that the requested path is within the storage directory. Attempts to access paths outside the storage directory will result in a 403 Forbidden error.
 
-### 3. Get All Files (Flat List)
+### 2. Get All Files (Flat List)
 
 Retrieves a flat list of all files without folder structure. Useful for searching or displaying a simple file list.
 
-**Endpoint:** `GET /api/file-manager/files`
+**Endpoint:** `GET /file-manager/files`
 
 **Response:**
 ```json
@@ -128,11 +120,11 @@ Retrieves a flat list of all files without folder structure. Useful for searchin
 
 **Note:** This endpoint only returns files, not folders. The list is sorted by path.
 
-### 4. Get Storage Statistics
+### 3. Get Storage Statistics
 
 Returns information about total storage usage, file count, and folder count.
 
-**Endpoint:** `GET /api/file-manager/stats`
+**Endpoint:** `GET /file-manager/stats`
 
 **Response:**
 ```json
@@ -238,7 +230,7 @@ const FileTree: React.FC<FileTreeProps> = ({ onFileSelect }) => {
     try {
       setLoading(true);
       const response = await axios.get<ApiResponse<FileTreeNodeDto>>(
-        '/api/file-manager/tree'
+        '/file-manager/tree'
       );
       
       if (response.data.success) {
@@ -311,7 +303,7 @@ const StorageStats: React.FC = () => {
   const loadStats = async () => {
     try {
       const response = await axios.get<ApiResponse<StorageStatsDto>>(
-        '/api/file-manager/stats'
+        '/file-manager/stats'
       );
       
       if (response.data.success) {

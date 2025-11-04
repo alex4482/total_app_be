@@ -63,19 +63,17 @@ public class FileDownloadController {
         String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8);
         String contentType = f.getContentType() != null ? f.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-        byte[] body = f.getData(); // could be null if you disabled BLOBs
-        if (body == null) {
-            // Filesystem fallback: rebuild expected final path and read bytes if present
-            try {
-                Path p = fileSystemHelper.buildPermanentPath(new OwnerRef(f.getOwnerType(), f.getOwnerId()), f.getId(), f.getOriginalFilename());
-                if (!fileSystemHelper.exists(p)) {
-                    return ResponseEntity.notFound().build();
-                }
-                body = fileSystemHelper.read(p);
-            } catch (Exception io) {
-                // If FS access fails, expose as 404 to avoid leaking FS details
+        // Read file from filesystem (we don't store BLOBs in DB anymore)
+        byte[] body;
+        try {
+            Path p = fileSystemHelper.buildPermanentPath(new OwnerRef(f.getOwnerType(), f.getOwnerId()), f.getId(), f.getOriginalFilename());
+            if (!fileSystemHelper.exists(p)) {
                 return ResponseEntity.notFound().build();
             }
+            body = fileSystemHelper.read(p);
+        } catch (Exception io) {
+            // If FS access fails, expose as 404 to avoid leaking FS details
+            return ResponseEntity.notFound().build();
         }
 
         return ResponseEntity.ok()
@@ -110,22 +108,20 @@ public class FileDownloadController {
                     continue; // Skip missing files
                 }
 
-                byte[] fileData = file.getData();
-
-                // Filesystem fallback if BLOB is null
-                if (fileData == null) {
-                    try {
-                        Path p = fileSystemHelper.buildPermanentPath(
-                                new OwnerRef(file.getOwnerType(), file.getOwnerId()),
-                                file.getId(),
-                                file.getOriginalFilename()
-                        );
-                        if (fileSystemHelper.exists(p)) {
-                            fileData = fileSystemHelper.read(p);
-                        }
-                    } catch (Exception e) {
-                        continue; // Skip this file if filesystem read fails
+                // Read file from filesystem (we don't store BLOBs in DB anymore)
+                byte[] fileData;
+                try {
+                    Path p = fileSystemHelper.buildPermanentPath(
+                            new OwnerRef(file.getOwnerType(), file.getOwnerId()),
+                            file.getId(),
+                            file.getOriginalFilename()
+                    );
+                    if (!fileSystemHelper.exists(p)) {
+                        continue; // Skip missing files
                     }
+                    fileData = fileSystemHelper.read(p);
+                } catch (Exception e) {
+                    continue; // Skip this file if filesystem read fails
                 }
 
                 if (fileData == null || fileData.length == 0) {

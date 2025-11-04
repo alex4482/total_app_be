@@ -8,12 +8,13 @@ import java.util.UUID;
 
 /**
  * Persistent representation of a stored file asset.
+ * Stores only metadata - the actual file content is stored on the filesystem.
  *
  * Notes:
  *  - Uniqueness constraints:
  *      uq_owner_name: per (owner_type, owner_id) a filename must be unique
  *      uq_owner_checksum: per (owner_type, owner_id) a checksum must be unique (deduplication)
- *  - The raw bytes are stored as a BLOB in 'data' (can be disabled by not populating it)
+ *  - File content is stored on disk at paths built by FileSystemHelper
  */
 @Entity
 @Table(name = "file_asset",
@@ -46,11 +47,6 @@ public class FileAsset {
 
     @Column(name="checksum", length=64)
     private String checksum;
-
-    @Lob
-    @Basic(fetch = FetchType.EAGER)
-    @Column(name="data")
-    private byte[] data;
 
     @Column(name="modified_at")
     private Instant modifiedAt;

@@ -14,6 +14,7 @@ package com.work.total_app.models.file;
  *  - downloadUrl: absolute/relative URL to fetch the bytes (GET)
  *  - modifiedAt: Data ultimei modificări a fișierului (File.lastModified) - ISO format
  *  - uploadedAt: Data la care fișierul a fost încărcat pe server - ISO format
+ *  - isDuplicate: true dacă fișierul a fost deduplicate (există deja cu același checksum)
  */
 public record FileDto(
         String id,
@@ -25,5 +26,6 @@ public record FileDto(
         String checksum,
         String downloadUrl,
         String modifiedAt,
-        String uploadedAt
+        String uploadedAt,
+        Boolean isDuplicate
 ) {}

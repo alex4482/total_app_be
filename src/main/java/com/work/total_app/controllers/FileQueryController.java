@@ -70,7 +70,8 @@ public class FileQueryController {
                         f.getChecksum(),
                         "/files/" + f.getId(),
                         f.getModifiedAt() != null ? f.getModifiedAt().toString() : null,
-                        f.getUploadedAt() != null ? f.getUploadedAt().toString() : null
+                        f.getUploadedAt() != null ? f.getUploadedAt().toString() : null,
+                        false // Not relevant for listing - this is just retrieving existing files
                 ))
                 .toList();
         return ResponseEntity.ok(ApiResponse.success(list));

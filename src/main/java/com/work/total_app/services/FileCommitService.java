@@ -5,6 +5,7 @@ import com.work.total_app.helpers.files.FileSystemHelper;
 import com.work.total_app.models.file.*;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,12 @@ public class FileCommitService {
     private DatabaseHelper databaseHelper;
     @Autowired
     private FileSystemHelper fileSystemHelper;
+    
+    // Self-injection to enable @Transactional on internal method calls
+    // @Lazy breaks the circular dependency
+    @Autowired
+    @Lazy
+    private FileCommitService self;
 
     /**
      * Commit selected temp uploads to a specific owner.
@@ -53,6 +60,7 @@ public class FileCommitService {
                 databaseHelper.deleteTemp(tempId);
                 // return existing file metadata
                 var existing = databaseHelper.findByOwnerAndChecksum(owner.type(), owner.id(), tu.getChecksum()).orElseThrow();
+                log.info("File deduplicated by checksum: {} (existing ID: {})", tu.getOriginalFilename(), existing.getId());
                 result.add(new FileDto(
                         existing.getId().toString(),
                         existing.getOwnerType().name(),
@@ -63,14 +71,35 @@ public class FileCommitService {
                         existing.getChecksum(),
                         "/files/" + existing.getId(),
                         existing.getModifiedAt() != null ? existing.getModifiedAt().toString() : null,
-                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null
+                        existing.getUploadedAt() != null ? existing.getUploadedAt().toString() : null,
+                        true // Mark as duplicate
                 ));
                 continue;
             }
 
-            // 2) Enforce name uniqueness if not overwriting
-            if (!overwrite && databaseHelper.existsByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename())) {
-                throw new IllegalStateException("Filename already exists for owner: " + tu.getOriginalFilename());
+            // 2) Handle existing files with same name
+            if (databaseHelper.existsByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename())) {
+                if (overwrite) {
+                    // Delete existing file with same name
+                    var existingFile = databaseHelper.findByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename());
+                    if (existingFile.isPresent()) {
+                        FileAsset existing = existingFile.get();
+                        log.info("Overwriting existing file: {} (ID: {})", existing.getOriginalFilename(), existing.getId());
+                        
+                        // Delete from database
+                        databaseHelper.deleteFileAsset(existing.getId());
+                        
+                        // Delete from filesystem (if exists)
+                        Path existingPath = fileSystemHelper.buildPermanentPath(owner, existing.getId(), existing.getOriginalFilename());
+                        try {
+                            Files.deleteIfExists(existingPath);
+                        } catch (Exception e) {
+                            log.warn("Failed to delete existing file from filesystem: {}", existingPath, e);
+                        }
+                    }
+                } else {
+                    throw new IllegalStateException("Filename already exists for owner: " + tu.getOriginalFilename());
+                }
             }
 
             // 3) Compute final path now; move happens after commit
@@ -78,10 +107,7 @@ public class FileCommitService {
             Path finalPath = fileSystemHelper.buildPermanentPath(owner, finalId, tu.getOriginalFilename());
             Path tempPath = Path.of(tu.getTempPath());
 
-            // 4) Read bytes from TEMP (for BLOB) BEFORE commit completes
-            byte[] data = Files.readAllBytes(tempPath);
-
-            // 5) Persist DB row
+            // 4) Persist DB row (metadata only - file content is on filesystem)
             FileAsset fa = new FileAsset();
             fa.setId(finalId);
             fa.setOwnerType(owner.type());
@@ -90,7 +116,6 @@ public class FileCommitService {
             fa.setContentType(tu.getContentType());
             fa.setSizeBytes(tu.getSizeBytes());
             fa.setChecksum(tu.getChecksum());
-            fa.setData(data); // set to null if you don't want BLOBs in DB
             // uploadedAt is set automatically by @PrePersist
             databaseHelper.save(fa);
 
@@ -114,9 +139,10 @@ public class FileCommitService {
                     fa.getContentType(),
                     fa.getSizeBytes(),
                     fa.getChecksum(),
-                    "/api/files/" + fa.getId(),
+                    "/files/" + fa.getId(),
                     fa.getModifiedAt() != null ? fa.getModifiedAt().toString() : null,
-                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null
+                    fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null,
+                    false // Not a duplicate - new file
             ));
         }
 
@@ -150,12 +176,25 @@ public class FileCommitService {
         
         for (UUID tempId : tempIds) {
             try {
-                // Try to get temp upload info first
+                // Check if temp upload exists first
                 TempUpload tu = databaseHelper.findTempById(tempId).orElse(null);
-                String filename = tu != null ? tu.getOriginalFilename() : "unknown";
+                if (tu == null) {
+                    // Temp file doesn't exist - skip it
+                    FileCommitResultDto.FailedFile failed = new FileCommitResultDto.FailedFile();
+                    failed.setTempId(tempId.toString());
+                    failed.setFilename("unknown");
+                    failed.setReason("Temporary file not found (expired or already committed)");
+                    result.getFailedFiles().add(failed);
+                    result.setFailedCount(result.getFailedCount() + 1);
+                    log.warn("Failed to commit file {}: temp file not found (may have expired or been already committed)", tempId);
+                    continue;
+                }
+                
+                String filename = tu.getOriginalFilename();
                 
                 // Commit single file (each in its own transaction)
-                FileDto fileDto = commitSingle(owner, tempId, overwrite);
+                // Use self-injection to ensure @Transactional is applied via Spring proxy
+                FileDto fileDto = self.commitSingle(owner, tempId, overwrite);
                 
                 // Success
                 FileCommitResultDto.CommittedFile committed = new FileCommitResultDto.CommittedFile();
@@ -168,14 +207,14 @@ public class FileCommitService {
                 result.setSuccessCount(result.getSuccessCount() + 1);
                 
             } catch (IllegalArgumentException e) {
-                // Invalid tempId
+                // Invalid tempId (shouldn't happen after our check above, but just in case)
                 FileCommitResultDto.FailedFile failed = new FileCommitResultDto.FailedFile();
                 failed.setTempId(tempId.toString());
                 failed.setFilename("unknown");
                 failed.setReason("Invalid temp file ID: " + e.getMessage());
                 result.getFailedFiles().add(failed);
                 result.setFailedCount(result.getFailedCount() + 1);
-                log.warn("Failed to commit file {}: invalid tempId", tempId);
+                log.error("Unexpected error - temp file check passed but commit failed for {}: {}", tempId, e.getMessage());
                 
             } catch (IllegalStateException e) {
                 // Conflict (name exists, etc.)
@@ -210,24 +249,50 @@ public class FileCommitService {
     
     /**
      * Commit a single file in its own transaction.
-     * This method is extracted to allow individual file commits without affecting the batch.
+     * This method is public to ensure Spring's @Transactional proxy is used when called from commitBulk.
      */
     @Transactional
-    private FileDto commitSingle(OwnerRef owner, UUID tempId, boolean overwrite) throws Exception {
+    public FileDto commitSingle(OwnerRef owner, UUID tempId, boolean overwrite) throws Exception {
         TempUpload tu = databaseHelper.findTempById(tempId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid tempId: " + tempId));
 
         // 1) Dedup by checksum
         if (databaseHelper.existsByOwnerAndChecksum(owner.type(), owner.id(), tu.getChecksum())) {
-            afterRollbackDelete(tu.getTempPath());
+            // Delete temp file immediately (no need for rollback callback since we're not creating anything new)
+            try {
+                Files.deleteIfExists(Path.of(tu.getTempPath()));
+            } catch (Exception e) {
+                log.warn("Failed to delete temp file: {}", tu.getTempPath(), e);
+            }
             databaseHelper.deleteTemp(tempId);
             var existing = databaseHelper.findByOwnerAndChecksum(owner.type(), owner.id(), tu.getChecksum()).orElseThrow();
-            return toFileDto(existing);
+            log.info("File deduplicated by checksum: {} (existing ID: {})", tu.getOriginalFilename(), existing.getId());
+            return toFileDto(existing, true); // Mark as duplicate
         }
 
-        // 2) Enforce name uniqueness if not overwriting
-        if (!overwrite && databaseHelper.existsByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename())) {
-            throw new IllegalStateException("Filename already exists for owner: " + tu.getOriginalFilename());
+        // 2) Handle existing files with same name
+        if (databaseHelper.existsByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename())) {
+            if (overwrite) {
+                // Delete existing file with same name
+                var existingFile = databaseHelper.findByOwnerAndName(owner.type(), owner.id(), tu.getOriginalFilename());
+                if (existingFile.isPresent()) {
+                    FileAsset existing = existingFile.get();
+                    log.info("Overwriting existing file: {} (ID: {})", existing.getOriginalFilename(), existing.getId());
+                    
+                    // Delete from database
+                    databaseHelper.deleteFileAsset(existing.getId());
+                    
+                    // Delete from filesystem (if exists)
+                    Path existingPath = fileSystemHelper.buildPermanentPath(owner, existing.getId(), existing.getOriginalFilename());
+                    try {
+                        Files.deleteIfExists(existingPath);
+                    } catch (Exception e) {
+                        log.warn("Failed to delete existing file from filesystem: {}", existingPath, e);
+                    }
+                }
+            } else {
+                throw new IllegalStateException("Filename already exists for owner: " + tu.getOriginalFilename());
+            }
         }
 
         // 3) Compute final path now; move happens after commit
@@ -235,10 +300,7 @@ public class FileCommitService {
         Path finalPath = fileSystemHelper.buildPermanentPath(owner, finalId, tu.getOriginalFilename());
         Path tempPath = Path.of(tu.getTempPath());
 
-        // 4) Read bytes from TEMP (for BLOB) BEFORE commit completes
-        byte[] data = Files.readAllBytes(tempPath);
-
-        // 5) Persist DB row
+        // 4) Persist DB row (metadata only - file content is on filesystem)
         FileAsset fa = new FileAsset();
         fa.setId(finalId);
         fa.setOwnerType(owner.type());
@@ -247,7 +309,6 @@ public class FileCommitService {
         fa.setContentType(tu.getContentType());
         fa.setSizeBytes(tu.getSizeBytes());
         fa.setChecksum(tu.getChecksum());
-        fa.setData(data);
         databaseHelper.save(fa);
 
         // 6) Schedule FS actions based on transaction outcome
@@ -257,10 +318,10 @@ public class FileCommitService {
         // 7) Remove temp row now
         databaseHelper.deleteTemp(tempId);
 
-        return toFileDto(fa);
+        return toFileDto(fa, false); // Not a duplicate - new file
     }
     
-    private FileDto toFileDto(FileAsset fa) {
+    private FileDto toFileDto(FileAsset fa, boolean isDuplicate) {
         return new FileDto(
                 fa.getId().toString(),
                 fa.getOwnerType().name(),
@@ -271,11 +332,16 @@ public class FileCommitService {
                 fa.getChecksum(),
                 "/files/" + fa.getId(),
                 fa.getModifiedAt() != null ? fa.getModifiedAt().toString() : null,
-                fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null
+                fa.getUploadedAt() != null ? fa.getUploadedAt().toString() : null,
+                isDuplicate
         );
     }
     
     private void afterCommitMove(Path tempPath, Path finalPath) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            log.warn("Transaction synchronization is not active. Cannot register afterCommit callback.");
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override public void afterCommit() {
                 try { 
@@ -288,6 +354,15 @@ public class FileCommitService {
     }
     
     private void afterRollbackDelete(String tempPath) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            log.warn("Transaction synchronization is not active. Deleting temp file immediately: {}", tempPath);
+            try {
+                Files.deleteIfExists(Path.of(tempPath));
+            } catch (Exception e) {
+                log.error("Failed to delete temp file: {}", tempPath, e);
+            }
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override public void afterCompletion(int status) {
                 if (status == STATUS_ROLLED_BACK) {
