@@ -1,6 +1,7 @@
 package com.work.total_app;
 
 import com.work.total_app.config.EmailerProperties;
+import com.work.total_app.config.ReminderProperties;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.springframework.boot.SpringApplication;
@@ -13,7 +14,7 @@ import java.nio.file.Paths;
 
 @Log4j2
 @SpringBootApplication
-@EnableConfigurationProperties(EmailerProperties.class)
+@EnableConfigurationProperties({EmailerProperties.class, ReminderProperties.class})
 @EnableScheduling
 public class TotalAppApplication {
 

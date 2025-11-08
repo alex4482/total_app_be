@@ -1,6 +1,8 @@
 package com.work.total_app.models.tenant;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.work.total_app.models.building.RentalSpace;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,19 +33,42 @@ public class TenantRentalData {
     private RentalSpace rentalSpace;
 
     @Temporal(TemporalType.DATE)
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
     private Date startDate;
 
     @Temporal(TemporalType.DATE)
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
     private Date endDate;
 
     private Double rent;
 
-    @ElementCollection
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency")
+    private Currency currency = Currency.RON;
+
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<PriceData> priceChanges = new ArrayList<>();
 
     // utility
     public void addPriceChange(Double newPrice, Date startDate) {
         priceChanges.add(new PriceData(newPrice, startDate));
+    }
+
+    // JSON properties for frontend (without causing circular references)
+    @JsonProperty("rentalSpaceId")
+    public String getRentalSpaceId() {
+        return rentalSpace != null ? rentalSpace.getName() : null;
+    }
+
+    @JsonProperty("rentalSpaceName")
+    public String getRentalSpaceName() {
+        return rentalSpace != null ? rentalSpace.getName() : null;
+    }
+
+    @JsonProperty("buildingId")
+    public Long getBuildingId() {
+        return rentalSpace != null && rentalSpace.getBuilding() != null 
+            ? rentalSpace.getBuilding().getId() : null;
     }
 }
 
@@ -55,5 +80,6 @@ class PriceData {
     private Double newPrice;
 
     @Temporal(TemporalType.DATE)
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
     private Date changeTime;
 }

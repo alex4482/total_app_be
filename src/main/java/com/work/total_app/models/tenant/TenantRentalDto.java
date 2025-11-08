@@ -4,6 +4,8 @@ import java.util.Date;
 
 public record TenantRentalDto(Long tenantId,
                               Long rentalSpaceId,
-                                Date startDate,
-                                Double price)
+                              Date startDate,
+                              Date endDate,
+                              Double price,
+                              Currency currency)
 { }

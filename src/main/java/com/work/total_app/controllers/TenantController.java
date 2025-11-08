@@ -4,12 +4,7 @@ import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.building.BuildingLocation;
 import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
-import com.work.total_app.models.tenant.CreateTenantDto;
-import com.work.total_app.models.tenant.Tenant;
-import com.work.total_app.models.tenant.TenantRentalData;
-import com.work.total_app.models.tenant.TenantRentalDto;
-import com.work.total_app.models.tenant.TenantImportResultDto;
-import com.work.total_app.models.tenant.TenantBulkDeleteResultDto;
+import com.work.total_app.models.tenant.*;
 import com.work.total_app.services.TenantRentalService;
 import com.work.total_app.services.TenantService;
 import com.work.total_app.services.TenantImportService;
@@ -141,15 +136,100 @@ public class TenantController {
     @PostMapping("/new-rental-agreement")
     public ResponseEntity<ApiResponse<TenantRentalData>> TenantRentSpace(@RequestBody TenantRentalDto dto)
     {
-        TenantRentalData trd = tenantRentalService.startNewRent(dto);
-        if (trd != null)
-        {
+        try {
+            TenantRentalData trd = tenantRentalService.startNewRent(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Rental agreement created successfully", trd));
+        } catch (ValidationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to create rental agreement", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to create rental agreement: " + e.getMessage()));
         }
+    }
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Failed to create rental agreement"));
+    @PutMapping("/rental-agreement/{id}")
+    public ResponseEntity<ApiResponse<TenantRentalData>> updateRentalAgreement(
+            @PathVariable Long id,
+            @RequestBody UpdateTenantRentalDto dto)
+    {
+        try {
+            TenantRentalData trd = tenantRentalService.updateRentalAgreement(id, dto);
+            return ResponseEntity.ok(ApiResponse.success("Rental agreement updated successfully", trd));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (ValidationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to update rental agreement {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to update rental agreement: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/rental-agreement/{id}/change-price")
+    public ResponseEntity<ApiResponse<TenantRentalData>> changePrice(
+            @PathVariable Long id,
+            @RequestBody ChangePriceDto dto)
+    {
+        try {
+            TenantRentalData trd = tenantRentalService.changePrice(id, dto);
+            return ResponseEntity.ok(ApiResponse.success("Price changed successfully", trd));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (ValidationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to change price for rental agreement {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to change price: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/rental-agreement/{id}/terminate")
+    public ResponseEntity<ApiResponse<TenantRentalData>> terminateRentalAgreement(
+            @PathVariable Long id,
+            @RequestBody TerminateRentalDto dto)
+    {
+        try {
+            TenantRentalData trd = tenantRentalService.terminateRentalAgreement(id, dto);
+            return ResponseEntity.ok(ApiResponse.success("Rental agreement terminated successfully", trd));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (ValidationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to terminate rental agreement {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to terminate rental agreement: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/rental-agreement/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteRentalAgreement(@PathVariable Long id)
+    {
+        try {
+            tenantRentalService.deleteRentalAgreement(id);
+            return ResponseEntity.ok(ApiResponse.success("Rental agreement deleted successfully", null));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to delete rental agreement {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to delete rental agreement: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/import")
