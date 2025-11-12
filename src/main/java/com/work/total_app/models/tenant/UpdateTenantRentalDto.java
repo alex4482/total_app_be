@@ -9,7 +9,12 @@ public record UpdateTenantRentalDto(
     Date startDate,
     Date endDate,
     Double rent,
-    Currency currency
+    Currency currency,
+    // Contract information (optional)
+    String contractNumber,
+    Date contractDate,
+    // Active services (optional - replaces all active services)
+    java.util.List<ActiveServiceDto> activeServices
 ) {
 }
 

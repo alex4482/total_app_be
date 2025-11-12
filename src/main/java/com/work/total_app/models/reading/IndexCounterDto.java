@@ -11,4 +11,5 @@ public class IndexCounterDto
     private CounterType counterType;
     private LocationType locationType;
     private BuildingLocation buildingLocation;
+    private Double defaultUnitPrice; // Global/default price for this counter
 }

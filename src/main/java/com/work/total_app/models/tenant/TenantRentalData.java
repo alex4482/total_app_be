@@ -49,6 +49,17 @@ public class TenantRentalData {
     @ElementCollection(fetch = FetchType.EAGER)
     private List<PriceData> priceChanges = new ArrayList<>();
 
+    // Contract information (optional)
+    private String contractNumber;
+    
+    @Temporal(TemporalType.DATE)
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
+    private Date contractDate;
+
+    // Active services for this rental agreement
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<ActiveService> activeServices = new ArrayList<>();
+
     // utility
     public void addPriceChange(Double newPrice, Date startDate) {
         priceChanges.add(new PriceData(newPrice, startDate));
@@ -80,6 +91,7 @@ class PriceData {
     private Double newPrice;
 
     @Temporal(TemporalType.DATE)
-    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
+    @JsonFormat(pattern = "dd-mm-yyyy", timezone = "UTC")
     private Date changeTime;
 }
+

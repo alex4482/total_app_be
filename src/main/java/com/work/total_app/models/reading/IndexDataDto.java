@@ -11,6 +11,7 @@ public class IndexDataDto {
     private Double index;
     private Date readingDate;
     private Long counterId;
+    private Double unitPrice; // Price per unit for this reading
 }
 
 
