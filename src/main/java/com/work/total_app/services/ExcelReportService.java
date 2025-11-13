@@ -7,6 +7,8 @@ import com.work.total_app.models.building.Room;
 import com.work.total_app.models.reading.CounterType;
 import com.work.total_app.models.reading.IndexCounter;
 import com.work.total_app.models.reading.IndexData;
+import com.work.total_app.models.tenant.ActiveService;
+import com.work.total_app.models.tenant.ServiceMonthlyValue;
 import com.work.total_app.models.tenant.Tenant;
 import com.work.total_app.models.tenant.TenantRentalData;
 import com.work.total_app.repositories.TenantRentalDataRepository;
@@ -41,6 +43,7 @@ public class ExcelReportService {
     @Autowired
     private com.work.total_app.repositories.ServiceMonthlyValueRepository serviceMonthlyValueRepository;
     
+    // No need for a singleton - exp4j is lightweight and thread-safe
 
     private static final String[] MONTHS = {
         "IANUARIE", "FEBRUARIE", "MARTIE", "APRILIE", "MAI", "IUNIE",
@@ -185,13 +188,6 @@ public class ExcelReportService {
         titleCell.setCellStyle(titleStyle);
         sheet.addMergedRegion(new CellRangeAddress(currentRow - 1, currentRow - 1, 0, 13));
         
-        // Subtitle
-        Row subtitleRow = sheet.createRow(currentRow++);
-        Cell subtitleCell = subtitleRow.createCell(0);
-        subtitleCell.setCellValue("cu serviciile oferite ce includ si utilitatile");
-        subtitleCell.setCellStyle(titleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(currentRow - 1, currentRow - 1, 0, 13));
-        
         // Empty row
         sheet.createRow(currentRow++);
         
@@ -215,21 +211,12 @@ public class ExcelReportService {
         CellStyle numberStyle = workbook.createCellStyle();
         numberStyle.setDataFormat(workbook.createDataFormat().getFormat("0.00"));
         
-        // Track first and last cost row for TOTAL formula
-        Integer firstCostRow = null;
-        Integer lastCostRow = null;
-        
         // E-ON (Electricity)
         if (counterMap.containsKey(CounterType.ELECTRICITY_220) || counterMap.containsKey(CounterType.ELECTRICITY_380)) {
             IndexCounter elecCounter = counterMap.getOrDefault(CounterType.ELECTRICITY_220, 
                                                               counterMap.get(CounterType.ELECTRICITY_380));
             if (elecCounter != null) {
                 createCounterRows(sheet, currentRow, "E-ON", "kw", "lei", elecCounter, year, numberStyle);
-                // First cost row is the cost row (rowIndex + 1) for first counter
-                if (firstCostRow == null) {
-                    firstCostRow = currentRow + 1;
-                }
-                lastCostRow = currentRow + 1;
                 currentRow += 2;
             }
         }
@@ -237,35 +224,30 @@ public class ExcelReportService {
         // APA (Water)
         if (counterMap.containsKey(CounterType.WATER)) {
             createCounterRows(sheet, currentRow, "APA", "mc", "lei", counterMap.get(CounterType.WATER), year, numberStyle);
-            if (firstCostRow == null) {
-                firstCostRow = currentRow + 1;
-            }
-            lastCostRow = currentRow + 1;
             currentRow += 2;
         }
         
         // GAZ (Gas)
         if (counterMap.containsKey(CounterType.GAS)) {
             createCounterRows(sheet, currentRow, "GAZ", "mc", "lei", counterMap.get(CounterType.GAS), year, numberStyle);
-            if (firstCostRow == null) {
-                firstCostRow = currentRow + 1;
-            }
-            lastCostRow = currentRow + 1;
             currentRow += 2;
         }
         
         // Load custom monthly values for this rental agreement and year
         Map<String, Double> customValuesMap = new HashMap<>();
-        List<com.work.total_app.models.tenant.ServiceMonthlyValue> customValues = 
+        List<ServiceMonthlyValue> customValues = 
             serviceMonthlyValueRepository.findByRentalDataIdAndYear(rentalData.getId(), year);
-        for (com.work.total_app.models.tenant.ServiceMonthlyValue customValue : customValues) {
+        for (ServiceMonthlyValue customValue : customValues) {
             String key = customValue.getServiceId() + "_" + customValue.getMonth();
             customValuesMap.put(key, customValue.getCustomValue());
         }
         
         // Build service keyword map (service name -> service ID) for formula evaluation
+        // Include all services that should be in report (from activeServices + implicit services)
         Map<String, Long> serviceKeywords = new HashMap<>();
-        for (com.work.total_app.models.tenant.ActiveService activeService : rentalData.getActiveServices()) {
+        
+        // Add keywords for services in activeServices
+        for (ActiveService activeService : rentalData.getActiveServices()) {
             com.work.total_app.models.service.Service service = serviceRepository.findById(activeService.getServiceId())
                 .orElse(null);
             if (service != null && service.getName() != null) {
@@ -277,7 +259,46 @@ public class ExcelReportService {
             }
         }
         
-        // Calculate service values for all active services (needed for formula dependencies)
+        // Add keywords for implicit services (defaultIncludeInReport = true, not in activeServices or IMPLICIT)
+        List<com.work.total_app.models.service.Service> allServices = serviceRepository.findAll();
+        for (com.work.total_app.models.service.Service service : allServices) {
+            if (service.getActive() != null && !service.getActive()) {
+                continue; // Skip inactive services
+            }
+            
+            // Check if service should be included implicitly
+            if (service.getDefaultIncludeInReport() != null && service.getDefaultIncludeInReport()) {
+                // Check if service is in activeServices
+                ActiveService activeService = rentalData.getActiveServices().stream()
+                    .filter(as -> as.getServiceId().equals(service.getId()))
+                    .findFirst()
+                    .orElse(null);
+                
+                if (activeService == null) {
+                    // Service not in activeServices but has defaultIncludeInReport = true → include it
+                    String keyword = normalizeToKeyword(service.getName());
+                    if (keyword != null && !keyword.isEmpty()) {
+                        serviceKeywords.put(keyword, service.getId());
+                    }
+                } else {
+                    // Service is in activeServices, check if it's IMPLICIT (includeInReport == null)
+                    if (activeService.getIncludeInReport() == null) {
+                        // IMPLICIT → already added above, but ensure keyword is there
+                        String keyword = normalizeToKeyword(service.getName());
+                        if (keyword != null && !keyword.isEmpty()) {
+                            serviceKeywords.put(keyword, service.getId());
+                        }
+                    }
+                    // If includeInReport is false (MANUAL_OFF), don't add keyword
+                    // If includeInReport is true (MANUAL_ON), already added above
+                }
+            }
+        }
+        
+        // Get all services that should be included in report (from activeServices + implicit services)
+        List<ServiceToInclude> servicesToInclude = getServicesToInclude(rentalData);
+        
+        // Calculate service values for all services that should be included (needed for formula dependencies)
         // We need to calculate in multiple passes to handle dependencies
         Map<Long, Map<Integer, Double>> allServiceValues = new HashMap<>();
         
@@ -285,12 +306,13 @@ public class ExcelReportService {
         // Second pass: calculate services with dependencies on other services
         for (int pass = 0; pass < 3; pass++) { // Max 3 passes to handle dependencies
             boolean allCalculated = true;
-            for (com.work.total_app.models.tenant.ActiveService activeService : rentalData.getActiveServices()) {
-                com.work.total_app.models.service.Service service = serviceRepository.findById(activeService.getServiceId())
-                    .orElse(null);
+            for (ServiceToInclude serviceToInclude : servicesToInclude) {
+                com.work.total_app.models.service.Service service = serviceToInclude.service;
+                ActiveService activeService = serviceToInclude.activeService;
+                
                 if (service == null) continue;
                 
-                if (!allServiceValues.containsKey(activeService.getServiceId())) {
+                if (!allServiceValues.containsKey(service.getId())) {
                     Map<Integer, Double> monthValues = new HashMap<>();
                     boolean canCalculate = true;
                     
@@ -298,24 +320,23 @@ public class ExcelReportService {
                     if (service.getFormula() != null && service.getFormula().getExpression() != null) {
                         String expr = service.getFormula().getExpression();
                         // Check if formula references other services (both legacy format and keyword format)
-                        for (com.work.total_app.models.tenant.ActiveService otherService : rentalData.getActiveServices()) {
-                            if (!otherService.getServiceId().equals(activeService.getServiceId())) {
-                                com.work.total_app.models.service.Service otherServiceEntity = serviceRepository.findById(otherService.getServiceId())
-                                    .orElse(null);
+                        for (ServiceToInclude otherServiceToInclude : servicesToInclude) {
+                            if (!otherServiceToInclude.service.getId().equals(service.getId())) {
+                                com.work.total_app.models.service.Service otherServiceEntity = otherServiceToInclude.service;
                                 
                                 // Check legacy format (service_1, service_2, etc.)
-                                if (expr.contains("service_" + otherService.getServiceId())) {
-                                    if (!allServiceValues.containsKey(otherService.getServiceId())) {
+                                if (expr.contains("service_" + otherServiceEntity.getId())) {
+                                    if (!allServiceValues.containsKey(otherServiceEntity.getId())) {
                                         canCalculate = false;
                                         break;
                                     }
                                 }
                                 
                                 // Check keyword format (salubrizare, cota_intretinere, etc.)
-                                if (otherServiceEntity != null && otherServiceEntity.getName() != null) {
+                                if (otherServiceEntity.getName() != null) {
                                     String keyword = normalizeToKeyword(otherServiceEntity.getName());
                                     if (keyword != null && !keyword.isEmpty() && expr.contains(keyword)) {
-                                        if (!allServiceValues.containsKey(otherService.getServiceId())) {
+                                        if (!allServiceValues.containsKey(otherServiceEntity.getId())) {
                                             canCalculate = false;
                                             break;
                                         }
@@ -339,22 +360,39 @@ public class ExcelReportService {
                             Date monthEnd = cal.getTime();
                             
                             // Check if service is active for this month
-                            boolean isActive = isServiceActiveForMonth(activeService, monthStart, monthEnd);
+                            boolean isActive;
+                            if (activeService != null) {
+                                // Service from activeServices - check activeFrom/activeUntil
+                                isActive = isServiceActiveForMonth(activeService, monthStart, monthEnd);
+                            } else {
+                                // Implicit service - active for entire rental period
+                                isActive = isMonthInRentalPeriod(rentalData, monthStart, monthEnd);
+                            }
+                            
                             if (isActive) {
                                 // Check for custom value first
-                                String customKey = activeService.getServiceId() + "_" + month;
+                                String customKey = service.getId() + "_" + month;
                                 if (customValuesMap.containsKey(customKey)) {
                                     monthValues.put(month, customValuesMap.get(customKey));
                                 } else {
-                                    // Calculate value
-                                    Double value = calculateServiceValue(activeService, service, rentalData, counters, year, month, allServiceValues);
+                                    // Calculate value (need to create a temporary ActiveService for implicit services)
+                                    ActiveService tempActiveService = activeService;
+                                    if (tempActiveService == null) {
+                                        // Create temporary ActiveService for implicit service
+                                        tempActiveService = new ActiveService();
+                                        tempActiveService.setServiceId(service.getId());
+                                        tempActiveService.setActiveFrom(rentalData.getStartDate());
+                                        tempActiveService.setActiveUntil(rentalData.getEndDate());
+                                        tempActiveService.setIncludeInReport(null); // IMPLICIT
+                                    }
+                                    Double value = calculateServiceValue(tempActiveService, service, rentalData, counters, year, month, allServiceValues);
                                     monthValues.put(month, value);
                                 }
                             } else {
                                 monthValues.put(month, 0.0);
                             }
                         }
-                        allServiceValues.put(activeService.getServiceId(), monthValues);
+                        allServiceValues.put(service.getId(), monthValues);
                     } else {
                         allCalculated = false;
                     }
@@ -363,110 +401,209 @@ public class ExcelReportService {
             if (allCalculated) break;
         }
         
-        // Active services from rentalData (only those that should be included in report)
-        for (com.work.total_app.models.tenant.ActiveService activeService : rentalData.getActiveServices()) {
-            // Check if service should be included in report
+        // Create rows for all services that should be included in report
+        for (ServiceToInclude serviceToInclude : servicesToInclude) {
+            com.work.total_app.models.service.Service service = serviceToInclude.service;
+            ActiveService activeService = serviceToInclude.activeService;
+            
+            if (service == null) {
+                log.warn("Service is null in servicesToInclude");
+                continue;
+            }
+            
+            Map<Integer, Double> monthValues = allServiceValues.get(service.getId());
+            
+            // If service values were not calculated, calculate them now
+            if (monthValues == null) {
+                log.debug("Service {} not found in allServiceValues, calculating values now", service.getId());
+                monthValues = new HashMap<>();
+                // Calculate values for all months
+                for (int month = 0; month < 12; month++) {
+                    Calendar cal = Calendar.getInstance();
+                    cal.set(year, month, 1, 0, 0, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+                    Date monthStart = cal.getTime();
+                    
+                    cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+                    cal.set(Calendar.HOUR_OF_DAY, 23);
+                    cal.set(Calendar.MINUTE, 59);
+                    cal.set(Calendar.SECOND, 59);
+                    Date monthEnd = cal.getTime();
+                    
+                    // Check if service is active for this month
+                    boolean isActive;
+                    if (activeService != null) {
+                        // Service from activeServices - check activeFrom/activeUntil
+                        isActive = isServiceActiveForMonth(activeService, monthStart, monthEnd);
+                    } else {
+                        // Implicit service - active for entire rental period
+                        isActive = isMonthInRentalPeriod(rentalData, monthStart, monthEnd);
+                    }
+                    
+                    if (isActive) {
+                        // Check for custom value first
+                        String customKey = service.getId() + "_" + month;
+                        if (customValuesMap.containsKey(customKey)) {
+                            monthValues.put(month, customValuesMap.get(customKey));
+                        } else {
+                            // Calculate value (need to create a temporary ActiveService for implicit services)
+                            ActiveService tempActiveService = activeService;
+                            if (tempActiveService == null) {
+                                // Create temporary ActiveService for implicit service
+                                tempActiveService = new ActiveService();
+                                tempActiveService.setServiceId(service.getId());
+                                tempActiveService.setActiveFrom(rentalData.getStartDate());
+                                tempActiveService.setActiveUntil(rentalData.getEndDate());
+                                tempActiveService.setIncludeInReport(null); // IMPLICIT
+                            }
+                            Double value = calculateServiceValue(tempActiveService, service, rentalData, counters, year, month, allServiceValues);
+                            monthValues.put(month, value != null ? value : 0.0);
+                        }
+                    } else {
+                        monthValues.put(month, 0.0);
+                    }
+                }
+                // Add to allServiceValues for potential future use
+                allServiceValues.put(service.getId(), monthValues);
+            }
+            
+            // Create temporary ActiveService for implicit services when creating row
+            ActiveService rowActiveService = activeService;
+            if (rowActiveService == null) {
+                // Create temporary ActiveService for implicit service
+                rowActiveService = new ActiveService();
+                rowActiveService.setServiceId(service.getId());
+                rowActiveService.setActiveFrom(rentalData.getStartDate());
+                rowActiveService.setActiveUntil(rentalData.getEndDate());
+                rowActiveService.setIncludeInReport(null); // IMPLICIT
+            }
+            
+            createActiveServiceRow(sheet, currentRow, rowActiveService, service, rentalData, counters, year, numberStyle, monthValues);
+            currentRow++;
+        }
+    }
+
+    /**
+     * Helper class to represent a service that should be included in the report.
+     * Can be from activeServices or an implicit service (defaultIncludeInReport = true).
+     */
+    private static class ServiceToInclude {
+        com.work.total_app.models.service.Service service;
+        ActiveService activeService; // null for implicit services
+        
+        ServiceToInclude(com.work.total_app.models.service.Service service, ActiveService activeService) {
+            this.service = service;
+            this.activeService = activeService;
+        }
+    }
+    
+    /**
+     * Get all services that should be included in the report.
+     * Includes:
+     * 1. Services from activeServices that are MANUAL_ON (includeInReport == true)
+     * 2. Services from activeServices that are IMPLICIT (includeInReport == null) 
+     *    and have defaultIncludeInReport == true at general level
+     * 3. Services that are NOT in activeServices but have defaultIncludeInReport == true at general level
+     * 
+     * Excludes:
+     * - Services from activeServices that are MANUAL_OFF (includeInReport == false)
+     * - Services from activeServices that are IMPLICIT but have defaultIncludeInReport == false
+     */
+    private List<ServiceToInclude> getServicesToInclude(TenantRentalData rentalData) {
+        List<ServiceToInclude> result = new ArrayList<>();
+        Set<Long> processedServiceIds = new HashSet<>();
+        
+        // First, add services from activeServices that should be included
+        for (ActiveService activeService : rentalData.getActiveServices()) {
             com.work.total_app.models.service.Service service = serviceRepository.findById(activeService.getServiceId())
                 .orElse(null);
             
             if (service == null) {
-                log.warn("Service not found with id: {}", activeService.getServiceId());
                 continue;
             }
             
-            // Determine if service should be included in report
-            // Use includeInReport from activeService if set, otherwise use service default
+            // Check if service should be included in report
             Boolean includeInReport = activeService.getIncludeInReport();
             if (includeInReport == null) {
-                // IMPLICIT - use service default
+                // IMPLICIT - use service default (defaultIncludeInReport from general level)
                 includeInReport = service.getDefaultIncludeInReport() != null ? service.getDefaultIncludeInReport() : false;
             }
             
-            // Only add services that should be included in report
+            // Add if MANUAL_ON (includeInReport == true) or IMPLICIT with defaultIncludeInReport == true
+            // Exclude if MANUAL_OFF (includeInReport == false) or IMPLICIT with defaultIncludeInReport == false
             if (includeInReport != null && includeInReport) {
-                Map<Integer, Double> monthValues = allServiceValues.get(activeService.getServiceId());
-                
-                // If service values were not calculated (e.g., service was not in calculation loop),
-                // calculate them now or use empty map (will show 0.0 for all months)
-                if (monthValues == null) {
-                    log.debug("Service {} not found in allServiceValues, calculating values now", activeService.getServiceId());
-                    monthValues = new HashMap<>();
-                    // Calculate values for all months
-                    for (int month = 0; month < 12; month++) {
-                        Calendar cal = Calendar.getInstance();
-                        cal.set(year, month, 1, 0, 0, 0);
-                        cal.set(Calendar.MILLISECOND, 0);
-                        Date monthStart = cal.getTime();
-                        
-                        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-                        cal.set(Calendar.HOUR_OF_DAY, 23);
-                        cal.set(Calendar.MINUTE, 59);
-                        cal.set(Calendar.SECOND, 59);
-                        Date monthEnd = cal.getTime();
-                        
-                        // Check if service is active for this month
-                        boolean isActive = isServiceActiveForMonth(activeService, monthStart, monthEnd);
-                        if (isActive) {
-                            // Check for custom value first
-                            String customKey = activeService.getServiceId() + "_" + month;
-                            if (customValuesMap.containsKey(customKey)) {
-                                monthValues.put(month, customValuesMap.get(customKey));
-                            } else {
-                                // Calculate value
-                                Double value = calculateServiceValue(activeService, service, rentalData, counters, year, month, allServiceValues);
-                                monthValues.put(month, value != null ? value : 0.0);
-                            }
-                        } else {
-                            monthValues.put(month, 0.0);
-                        }
-                    }
-                    // Add to allServiceValues for potential future use
-                    allServiceValues.put(activeService.getServiceId(), monthValues);
-                }
-                
-                createActiveServiceRow(sheet, currentRow, activeService, service, rentalData, counters, year, numberStyle, monthValues);
-                if (firstCostRow == null) {
-                    firstCostRow = currentRow;
-                }
-                lastCostRow = currentRow;
-                currentRow++;
+                result.add(new ServiceToInclude(service, activeService));
+                processedServiceIds.add(service.getId());
             }
         }
         
-        // Empty row
-        sheet.createRow(currentRow++);
-        
-        // Total rows
-        Row totalRow = sheet.createRow(currentRow++);
-        CellStyle boldStyle = workbook.createCellStyle();
-        Font boldFont = workbook.createFont();
-        boldFont.setBold(true);
-        boldStyle.setFont(boldFont);
-        boldStyle.setDataFormat(numberStyle.getDataFormat());
-        
-        Cell totalLabelCell = totalRow.createCell(0);
-        totalLabelCell.setCellValue("TOTAL");
-        totalLabelCell.setCellStyle(boldStyle);
-        
-        // Calculate totals for each month (only if we have cost rows)
-        if (firstCostRow != null && lastCostRow != null) {
-            for (int month = 0; month < 12; month++) {
-                Cell totalCell = totalRow.createCell(month + 2);
-                // Formula to sum all costs for this month column (from first cost row to last cost row)
-                // Add 1 to row numbers because Excel uses 1-based indexing
-                String formula = "SUM(" + getColumnLetter(month + 2) + (firstCostRow + 1) + ":" + 
-                               getColumnLetter(month + 2) + (lastCostRow + 1) + ")";
-                totalCell.setCellFormula(formula);
-                totalCell.setCellStyle(boldStyle);
+        // Then, add implicit services (defaultIncludeInReport = true) that are NOT in activeServices
+        // These are services that should be included by default but haven't been explicitly added to the rental agreement
+        List<com.work.total_app.models.service.Service> allServices = serviceRepository.findAll();
+        for (com.work.total_app.models.service.Service service : allServices) {
+            if (service.getActive() != null && !service.getActive()) {
+                continue; // Skip inactive services
             }
+            
+            // Skip if already processed (already in activeServices)
+            if (processedServiceIds.contains(service.getId())) {
+                continue;
+            }
+            
+            // Check if service should be included implicitly (defaultIncludeInReport == true at general level)
+            if (service.getDefaultIncludeInReport() != null && service.getDefaultIncludeInReport()) {
+                // Service not in activeServices but has defaultIncludeInReport = true → include it implicitly
+                result.add(new ServiceToInclude(service, null));
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Helper method to convert Date (java.util.Date or java.sql.Date) to LocalDate.
+     * Handles both types safely.
+     */
+    private java.time.LocalDate dateToLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+        if (date instanceof java.sql.Date) {
+            // java.sql.Date has toLocalDate() method
+            return ((java.sql.Date) date).toLocalDate();
         } else {
-            // No cost rows, set all totals to 0
-            for (int month = 0; month < 12; month++) {
-                Cell totalCell = totalRow.createCell(month + 2);
-                totalCell.setCellValue(0.0);
-                totalCell.setCellStyle(boldStyle);
-            }
+            // java.util.Date - use toInstant()
+            return date.toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate();
         }
+    }
+    
+    /**
+     * Check if a month is within the rental period.
+     * Used for implicit services that don't have activeFrom/activeUntil.
+     * A month is considered in the rental period if it overlaps with the rental period.
+     */
+    private boolean isMonthInRentalPeriod(TenantRentalData rentalData, Date monthStart, Date monthEnd) {
+        if (rentalData.getStartDate() == null) {
+            return false;
+        }
+        
+        // Normalize dates to LocalDate for comparison
+        java.time.LocalDate startDateLocal = dateToLocalDate(rentalData.getStartDate());
+        java.time.LocalDate monthStartLocal = dateToLocalDate(monthStart);
+        java.time.LocalDate monthEndLocal = dateToLocalDate(monthEnd);
+        
+        // If no end date, month must start on or after rental start
+        if (rentalData.getEndDate() == null) {
+            return !monthStartLocal.isBefore(startDateLocal);
+        }
+        
+        java.time.LocalDate endDateLocal = dateToLocalDate(rentalData.getEndDate());
+        
+        // Check if month overlaps with rental period
+        // Month overlaps if: monthStart <= endDate AND monthEnd >= startDate
+        return !monthStartLocal.isAfter(endDateLocal) && !monthEndLocal.isBefore(startDateLocal);
     }
 
     private void createCounterRows(Sheet sheet, int rowIndex, String serviceName, String unit1, String unit2,
@@ -539,12 +676,9 @@ public class ExcelReportService {
         }
         
         // Normalize dates to LocalDate for comparison (ignore time and timezone)
-        java.time.LocalDate activeFromLocal = activeFrom.toInstant()
-            .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-        java.time.LocalDate monthStartLocal = monthStart.toInstant()
-            .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
-        java.time.LocalDate monthEndLocal = monthEnd.toInstant()
-            .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        java.time.LocalDate activeFromLocal = dateToLocalDate(activeFrom);
+        java.time.LocalDate monthStartLocal = dateToLocalDate(monthStart);
+        java.time.LocalDate monthEndLocal = dateToLocalDate(monthEnd);
         
         // Service must start before or during the month
         if (activeFromLocal.isAfter(monthEndLocal)) {
@@ -553,8 +687,7 @@ public class ExcelReportService {
         
         // If activeUntil is set, it must be after or during the month
         if (activeUntil != null) {
-            java.time.LocalDate activeUntilLocal = activeUntil.toInstant()
-                .atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            java.time.LocalDate activeUntilLocal = dateToLocalDate(activeUntil);
             if (activeUntilLocal.isBefore(monthStartLocal)) {
                 return false;
             }
@@ -726,16 +859,23 @@ public class ExcelReportService {
                 }
             }
             
-            // Simple expression evaluator using ScriptEngine
-            javax.script.ScriptEngineManager manager = new javax.script.ScriptEngineManager();
-            javax.script.ScriptEngine engine = manager.getEngineByName("JavaScript");
-            Object result = engine.eval(expr);
+            // Simple expression evaluator using exp4j (mathematical expression evaluator)
+            // exp4j is lightweight, thread-safe, and perfect for simple mathematical formulas
+            // If any variables remain in the expression (not replaced), replace them with 0
+            // This handles cases where a service variable is missing
+            // Pattern matches identifiers (letters, underscores) that might be variables
+            expr = expr.replaceAll("\\b[a-zA-Z_][a-zA-Z0-9_]*\\b", "0");
             
-            if (result instanceof Number) {
-                return ((Number) result).doubleValue();
+            try {
+                net.objecthunter.exp4j.Expression exp4jExpression = new net.objecthunter.exp4j.ExpressionBuilder(expr)
+                    .build();
+                
+                double result = exp4jExpression.evaluate();
+                return result;
+            } catch (Exception e) {
+                log.warn("Error evaluating formula '{}' (processed: '{}'): {}", expression, expr, e.getMessage());
+                return 0.0;
             }
-            
-            return 0.0;
         } catch (Exception e) {
             log.warn("Error evaluating formula '{}': {}", expression, e.getMessage());
             return 0.0;
@@ -1251,7 +1391,7 @@ public class ExcelReportService {
         }
         
         // Known counter names (to skip)
-        Set<String> counterNames = Set.of("E-ON", "APA", "GAZ", "TOTAL");
+        Set<String> counterNames = Set.of("E-ON", "APA", "GAZ");
         
         // Process rows after header
         com.work.total_app.models.tenant.UpdateFromExcelResult result = 
@@ -1262,13 +1402,12 @@ public class ExcelReportService {
             Row row = sheet.getRow(rowIndex);
             if (row == null) continue;
             
-            // Check if this is the TOTAL row or empty row
+            // Check if this is an empty row
             Cell firstCell = row.getCell(0);
             if (firstCell == null) continue;
             
             String serviceName = getCellValueAsString(firstCell);
             if (serviceName == null || serviceName.trim().isEmpty()) continue;
-            if (serviceName.equals("TOTAL")) break; // Stop at TOTAL row
             
             // Skip counter rows (they have specific names)
             if (counterNames.contains(serviceName.trim().toUpperCase())) {

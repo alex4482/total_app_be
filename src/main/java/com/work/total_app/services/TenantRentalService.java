@@ -148,16 +148,12 @@ public class TenantRentalService {
             trd.getActiveServices().clear();
             Date defaultActiveFrom = trd.getStartDate() != null ? trd.getStartDate() : Date.from(Instant.now());
             // Normalize defaultActiveFrom to start of day
-            LocalDate defaultActiveFromLocal = defaultActiveFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate defaultActiveFromLocal = dateToLocalDate(defaultActiveFrom);
             Date normalizedDefaultActiveFrom = Date.from(defaultActiveFromLocal.atStartOfDay(ZoneId.systemDefault()).toInstant());
             
             // Normalize rental dates to start of day for comparison
-            LocalDate startDateLocal = trd.getStartDate() != null 
-                ? trd.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() 
-                : null;
-            LocalDate endDateLocal = trd.getEndDate() != null 
-                ? trd.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() 
-                : null;
+            LocalDate startDateLocal = dateToLocalDate(trd.getStartDate());
+            LocalDate endDateLocal = dateToLocalDate(trd.getEndDate());
             
             for (ActiveServiceDto activeServiceDto : dto.activeServices()) {
                 Service service = serviceRepository.findById(activeServiceDto.serviceId())
@@ -165,7 +161,7 @@ public class TenantRentalService {
                 
                 // Validate dates - normalize to start of day for comparison
                 Date activeFrom = activeServiceDto.activeFrom() != null ? activeServiceDto.activeFrom() : normalizedDefaultActiveFrom;
-                LocalDate activeFromLocal = activeFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                LocalDate activeFromLocal = dateToLocalDate(activeFrom);
                 
                 if (startDateLocal != null && activeFromLocal.isBefore(startDateLocal)) {
                     throw new ValidationException(
@@ -178,8 +174,7 @@ public class TenantRentalService {
                             activeFromLocal, endDateLocal));
                 }
                 if (activeServiceDto.activeUntil() != null) {
-                    LocalDate activeUntilLocal = activeServiceDto.activeUntil().toInstant()
-                        .atZone(ZoneId.systemDefault()).toLocalDate();
+                    LocalDate activeUntilLocal = dateToLocalDate(activeServiceDto.activeUntil());
                     if (activeFromLocal != null && activeUntilLocal.isBefore(activeFromLocal)) {
                         throw new ValidationException(
                             String.format("Data de dezactivare a serviciului (%s) nu poate fi înainte de data de activare (%s)", 
@@ -205,8 +200,7 @@ public class TenantRentalService {
                 
                 // Normalize activeUntil to start of day if provided
                 if (activeServiceDto.activeUntil() != null) {
-                    LocalDate activeUntilLocal = activeServiceDto.activeUntil().toInstant()
-                        .atZone(ZoneId.systemDefault()).toLocalDate();
+                    LocalDate activeUntilLocal = dateToLocalDate(activeServiceDto.activeUntil());
                     Date normalizedActiveUntil = Date.from(activeUntilLocal.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     activeService.setActiveUntil(normalizedActiveUntil);
                 } else {
@@ -371,13 +365,9 @@ public class TenantRentalService {
                 Date activeFrom = serviceDto.activeFrom() != null ? serviceDto.activeFrom() : defaultActiveFrom;
                 
                 // Normalize dates to start of day for comparison (ignore time and timezone)
-                LocalDate activeFromLocal = activeFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                LocalDate startDateLocal = trd.getStartDate() != null 
-                    ? trd.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() 
-                    : null;
-                LocalDate endDateLocal = trd.getEndDate() != null 
-                    ? trd.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate() 
-                    : null;
+                LocalDate activeFromLocal = dateToLocalDate(activeFrom);
+                LocalDate startDateLocal = dateToLocalDate(trd.getStartDate());
+                LocalDate endDateLocal = dateToLocalDate(trd.getEndDate());
                 
                 if (startDateLocal != null && activeFromLocal.isBefore(startDateLocal)) {
                     throw new ValidationException(
@@ -390,8 +380,7 @@ public class TenantRentalService {
                             activeFromLocal, endDateLocal));
                 }
                 if (serviceDto.activeUntil() != null) {
-                    LocalDate activeUntilLocal = serviceDto.activeUntil().toInstant()
-                        .atZone(ZoneId.systemDefault()).toLocalDate();
+                    LocalDate activeUntilLocal = dateToLocalDate(serviceDto.activeUntil());
                     if (activeFromLocal != null && activeUntilLocal.isBefore(activeFromLocal)) {
                         throw new ValidationException(
                             String.format("Data de dezactivare a serviciului (%s) nu poate fi înainte de data de activare (%s)",
@@ -447,8 +436,7 @@ public class TenantRentalService {
                 
                 // Normalize activeUntil to start of day if provided
                 if (serviceDto.activeUntil() != null) {
-                    LocalDate activeUntilLocal = serviceDto.activeUntil().toInstant()
-                        .atZone(ZoneId.systemDefault()).toLocalDate();
+                    LocalDate activeUntilLocal = dateToLocalDate(serviceDto.activeUntil());
                     Date normalizedActiveUntil = Date.from(activeUntilLocal.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     activeService.setActiveUntil(normalizedActiveUntil);
                 } else {
@@ -508,8 +496,7 @@ public class TenantRentalService {
         // If contract starts on 9 November 2025, November 2025 should be valid
         // If contract ends on 29 November 2025, November 2025 should be valid
         if (trd.getStartDate() != null) {
-            LocalDate startDateLocal = trd.getStartDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate startDateLocal = dateToLocalDate(trd.getStartDate());
             int startYear = startDateLocal.getYear();
             int startMonth = startDateLocal.getMonthValue() - 1; // 0-based month
             
@@ -522,8 +509,7 @@ public class TenantRentalService {
         }
         
         if (trd.getEndDate() != null) {
-            LocalDate endDateLocal = trd.getEndDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate endDateLocal = dateToLocalDate(trd.getEndDate());
             int endYear = endDateLocal.getYear();
             int endMonth = endDateLocal.getMonthValue() - 1; // 0-based month
             
@@ -538,18 +524,32 @@ public class TenantRentalService {
         // Get counters for calculation
         List<IndexCounter> counters = trd.getRentalSpace().getCounters();
 
-        // Build map of active service IDs
+        // Build map of active service IDs (from explicit activeServices)
         Set<Long> activeServiceIds = trd.getActiveServices().stream()
             .map(ActiveService::getServiceId)
             .collect(Collectors.toSet());
+
+        // Get all services to check for implicit inclusion (defaultIncludeInReport = true)
+        Map<Long, Service> allServices = serviceRepository.findAll().stream()
+            .collect(Collectors.toMap(Service::getId, s -> s));
 
         List<UpdateServiceValuesResponse.UpdatedServiceInfo> updatedServices = new ArrayList<>();
 
         // Process service values
         if (request.serviceValues() != null) {
             for (UpdateServiceValuesRequest.ServiceValueDto valueDto : request.serviceValues()) {
-                // Validate service is active
-                if (!activeServiceIds.contains(valueDto.serviceId())) {
+                // Get service for validation and later use
+                Service service = allServices.get(valueDto.serviceId());
+                if (service == null) {
+                    service = serviceRepository.findById(valueDto.serviceId())
+                        .orElseThrow(() -> new NotFoundException("Service not found with id: " + valueDto.serviceId()));
+                }
+                
+                // Validate service is active OR is implicitly included (defaultIncludeInReport = true)
+                boolean isExplicitlyActive = activeServiceIds.contains(valueDto.serviceId());
+                boolean isImplicitlyIncluded = service.getDefaultIncludeInReport() != null && service.getDefaultIncludeInReport();
+                
+                if (!isExplicitlyActive && !isImplicitlyIncluded) {
                     throw new ValidationException(
                         String.format("Service with id %d is not active for this rental agreement", valueDto.serviceId()));
                 }
@@ -559,10 +559,6 @@ public class TenantRentalService {
                     throw new ValidationException(
                         String.format("Service value must be a positive number for service id %d", valueDto.serviceId()));
                 }
-
-                // Get service for name
-                Service service = serviceRepository.findById(valueDto.serviceId())
-                    .orElseThrow(() -> new NotFoundException("Service not found with id: " + valueDto.serviceId()));
 
                 // Get or create ServiceMonthlyValue
                 Optional<ServiceMonthlyValue> existingValue = serviceMonthlyValueRepository
@@ -905,5 +901,24 @@ public class TenantRentalService {
         }
 
         return new GetServicesResponse(rentalAgreementId, services);
+    }
+    
+    /**
+     * Safely convert java.util.Date or java.sql.Date to LocalDate.
+     * java.sql.Date does not support toInstant() directly, so we need special handling.
+     */
+    private LocalDate dateToLocalDate(Date date) {
+        if (date == null) {
+            return null;
+        }
+        if (date instanceof java.sql.Date) {
+            // java.sql.Date has toLocalDate() method
+            return ((java.sql.Date) date).toLocalDate();
+        } else {
+            // java.util.Date - use toInstant()
+            return date.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+        }
     }
 }

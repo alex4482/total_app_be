@@ -5,7 +5,9 @@ import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -45,10 +47,21 @@ public class GlobalControllerExceptionHandler {
                 .body(ApiResponse.error(e.getMessage()));
     }
 
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException e) {
+        log.warn("Media type not acceptable: {}", e.getMessage());
+        // Explicitly set Content-Type to JSON to avoid serialization issues
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error("The requested media type is not acceptable. Please use application/json."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception e) {
         log.error("Unexpected error: {}", e.getMessage(), e);
+        // Explicitly set Content-Type to JSON to avoid serialization issues
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error("An unexpected error occurred. Please try again."));
     }
 }

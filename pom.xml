@@ -21,6 +21,14 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<repositories>
+		<repository>
+			<id>central</id>
+			<name>Maven Central</name>
+			<url>https://repo1.maven.org/maven2</url>
+		</repository>
+	</repositories>
+
 	<!-- Blocăm Tomcat la o versiune FIX >= 10.1.44 -->
 
 	<dependencies>
@@ -196,6 +204,14 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.11.5</version>
 			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Expression evaluation for formulas (replaces Nashorn in Java 15+) -->
+		<!-- Using exp4j for simple mathematical expression evaluation -->
+		<dependency>
+			<groupId>net.objecthunter</groupId>
+			<artifactId>exp4j</artifactId>
+			<version>0.4.8</version>
 		</dependency>
 	</dependencies>
 

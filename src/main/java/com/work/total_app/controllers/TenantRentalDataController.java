@@ -23,13 +23,6 @@ public class TenantRentalDataController {
     @Autowired
     private TenantRentalService tenantRentalService;
 
-    @GetMapping("/month-calculations/{month}")
-    public MonthCalculationsDto getMonthCalculations(@PathVariable Month month,
-                                                     @RequestParam String tenantId)
-    {
-        return null;
-    }
-
     /**
      * Update active services for a rental agreement.
      * Endpoint: PUT /tenant-rental-data/{rentalAgreementId}/services
