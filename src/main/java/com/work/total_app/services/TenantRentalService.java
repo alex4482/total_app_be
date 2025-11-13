@@ -169,12 +169,12 @@ public class TenantRentalService {
                 
                 if (startDateLocal != null && activeFromLocal.isBefore(startDateLocal)) {
                     throw new ValidationException(
-                        String.format("Service active from date (%s) cannot be before rental start date (%s)", 
+                        String.format("Data de activare a serviciului (%s) nu poate fi înainte de data de început a contractului (%s)", 
                             activeFromLocal, startDateLocal));
                 }
                 if (endDateLocal != null && activeFromLocal.isAfter(endDateLocal)) {
                     throw new ValidationException(
-                        String.format("Service active from date (%s) cannot be after rental end date (%s)", 
+                        String.format("Data de activare a serviciului (%s) nu poate fi după data de sfârșit a contractului (%s)", 
                             activeFromLocal, endDateLocal));
                 }
                 if (activeServiceDto.activeUntil() != null) {
@@ -182,12 +182,12 @@ public class TenantRentalService {
                         .atZone(ZoneId.systemDefault()).toLocalDate();
                     if (activeFromLocal != null && activeUntilLocal.isBefore(activeFromLocal)) {
                         throw new ValidationException(
-                            String.format("Service active until date (%s) cannot be before active from date (%s)", 
+                            String.format("Data de dezactivare a serviciului (%s) nu poate fi înainte de data de activare (%s)", 
                                 activeUntilLocal, activeFromLocal));
                     }
                     if (endDateLocal != null && activeUntilLocal.isAfter(endDateLocal)) {
                         throw new ValidationException(
-                            String.format("Service active until date (%s) cannot be after rental end date (%s)", 
+                            String.format("Data de dezactivare a serviciului (%s) nu poate fi după data de sfârșit a contractului (%s)", 
                                 activeUntilLocal, endDateLocal));
                     }
                 }
@@ -242,12 +242,12 @@ public class TenantRentalService {
         // Validate effective date is between startDate and endDate (if exists)
         if (trd.getStartDate() != null && dto.effectiveDate().before(trd.getStartDate())) {
             throw new ValidationException(
-                String.format("Effective date (%s) cannot be before rental start date (%s)", 
+                String.format("Data efectivă (%s) nu poate fi înainte de data de început a contractului (%s)", 
                     dto.effectiveDate(), trd.getStartDate()));
         }
         if (trd.getEndDate() != null && dto.effectiveDate().after(trd.getEndDate())) {
             throw new ValidationException(
-                String.format("Effective date (%s) cannot be after rental end date (%s)", 
+                String.format("Data efectivă (%s) nu poate fi după data de sfârșit a contractului (%s)", 
                     dto.effectiveDate(), trd.getEndDate()));
         }
 
@@ -381,12 +381,12 @@ public class TenantRentalService {
                 
                 if (startDateLocal != null && activeFromLocal.isBefore(startDateLocal)) {
                     throw new ValidationException(
-                        String.format("Service active from date (%s) cannot be before rental start date (%s)",
+                        String.format("Data de activare a serviciului (%s) nu poate fi înainte de data de început a contractului (%s)",
                             activeFromLocal, startDateLocal));
                 }
                 if (endDateLocal != null && activeFromLocal.isAfter(endDateLocal)) {
                     throw new ValidationException(
-                        String.format("Service active from date (%s) cannot be after rental end date (%s)",
+                        String.format("Data de activare a serviciului (%s) nu poate fi după data de sfârșit a contractului (%s)",
                             activeFromLocal, endDateLocal));
                 }
                 if (serviceDto.activeUntil() != null) {
@@ -394,12 +394,12 @@ public class TenantRentalService {
                         .atZone(ZoneId.systemDefault()).toLocalDate();
                     if (activeFromLocal != null && activeUntilLocal.isBefore(activeFromLocal)) {
                         throw new ValidationException(
-                            String.format("Service active until date (%s) cannot be before active from date (%s)",
+                            String.format("Data de dezactivare a serviciului (%s) nu poate fi înainte de data de activare (%s)",
                                 activeUntilLocal, activeFromLocal));
                     }
                     if (endDateLocal != null && activeUntilLocal.isAfter(endDateLocal)) {
                         throw new ValidationException(
-                            String.format("Service active until date (%s) cannot be after rental end date (%s)",
+                            String.format("Data de dezactivare a serviciului (%s) nu poate fi după data de sfârșit a contractului (%s)",
                                 activeUntilLocal, endDateLocal));
                     }
                 }
@@ -504,27 +504,35 @@ public class TenantRentalService {
         // Convert month from 1-12 to 0-11 for internal storage
         int month = request.month() - 1;
 
-        // Validate month is within rental period
-        Calendar cal = Calendar.getInstance();
-        cal.set(request.year(), month, 1, 0, 0, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        Date monthStart = cal.getTime();
-
-        if (trd.getStartDate() != null && monthStart.before(trd.getStartDate())) {
-            throw new ValidationException(
-                String.format("Month %d/%d is before rental start date (%s)",
-                    request.month(), request.year(), trd.getStartDate()));
+        // Validate month is within rental period (compare only year and month, not exact dates)
+        // If contract starts on 9 November 2025, November 2025 should be valid
+        // If contract ends on 29 November 2025, November 2025 should be valid
+        if (trd.getStartDate() != null) {
+            LocalDate startDateLocal = trd.getStartDate().toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDate();
+            int startYear = startDateLocal.getYear();
+            int startMonth = startDateLocal.getMonthValue() - 1; // 0-based month
+            
+            // Check if requested month/year is before contract start month/year
+            if (request.year() < startYear || (request.year() == startYear && month < startMonth)) {
+                throw new ValidationException(
+                    String.format("Luna %d/%d este înainte de luna de început a contractului (%d/%d)",
+                        request.month(), request.year(), startMonth + 1, startYear));
+            }
         }
-        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-        cal.set(Calendar.HOUR_OF_DAY, 23);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.SECOND, 59);
-        Date monthEnd = cal.getTime();
-
-        if (trd.getEndDate() != null && monthEnd.after(trd.getEndDate())) {
-            throw new ValidationException(
-                String.format("Month %d/%d is after rental end date (%s)",
-                    request.month(), request.year(), trd.getEndDate()));
+        
+        if (trd.getEndDate() != null) {
+            LocalDate endDateLocal = trd.getEndDate().toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDate();
+            int endYear = endDateLocal.getYear();
+            int endMonth = endDateLocal.getMonthValue() - 1; // 0-based month
+            
+            // Check if requested month/year is after contract end month/year
+            if (request.year() > endYear || (request.year() == endYear && month > endMonth)) {
+                throw new ValidationException(
+                    String.format("Luna %d/%d este după luna de sfârșit a contractului (%d/%d)",
+                        request.month(), request.year(), endMonth + 1, endYear));
+            }
         }
 
         // Get counters for calculation
