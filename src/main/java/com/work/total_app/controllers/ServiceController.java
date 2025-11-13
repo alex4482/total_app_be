@@ -57,6 +57,35 @@ public class ServiceController {
     }
 
     /**
+     * Get all service keywords for use in formulas.
+     * GET /services/keywords
+     * 
+     * Returns service names transformed to keywords:
+     * - Lowercase
+     * - Spaces replaced with underscore
+     * - Diacritics removed (ă -> a, î -> i, etc.)
+     * 
+     * Example:
+     * - "Salubrizare" -> "salubrizare"
+     * - "Cota întreținere" -> "cota_intretinere"
+     * - "Serviciu de alarmă" -> "serviciu_de_alarma"
+     * 
+     * NOTE: This endpoint must be declared BEFORE /{id} to avoid route conflicts.
+     */
+    @GetMapping("/keywords")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<ServiceKeywordsResponse>> getServiceKeywords() {
+        try {
+            ServiceKeywordsResponse response = serviceService.getServiceKeywords();
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("Error getting service keywords", e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("Failed to get service keywords: " + e.getMessage()));
+        }
+    }
+
+    /**
      * Get service by ID.
      * GET /services/{id}
      */
@@ -133,33 +162,6 @@ public class ServiceController {
             log.error("Error deleting service {}", id, e);
             return ResponseEntity.internalServerError()
                 .body(ApiResponse.error("Failed to delete service: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * Get all service keywords for use in formulas.
-     * GET /services/keywords
-     * 
-     * Returns service names transformed to keywords:
-     * - Lowercase
-     * - Spaces replaced with underscore
-     * - Diacritics removed (ă -> a, î -> i, etc.)
-     * 
-     * Example:
-     * - "Salubrizare" -> "salubrizare"
-     * - "Cota întreținere" -> "cota_intretinere"
-     * - "Serviciu de alarmă" -> "serviciu_de_alarma"
-     */
-    @GetMapping("/keywords")
-    @ResponseBody
-    public ResponseEntity<ApiResponse<ServiceKeywordsResponse>> getServiceKeywords() {
-        try {
-            ServiceKeywordsResponse response = serviceService.getServiceKeywords();
-            return ResponseEntity.ok(ApiResponse.success(response));
-        } catch (Exception e) {
-            log.error("Error getting service keywords", e);
-            return ResponseEntity.internalServerError()
-                .body(ApiResponse.error("Failed to get service keywords: " + e.getMessage()));
         }
     }
 }
