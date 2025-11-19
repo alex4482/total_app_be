@@ -9,6 +9,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,19 +27,20 @@ jobs:
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          [ -n "${{ secrets.SSH_KNOWN_HOSTS }}" ] && echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts || true
+      # NU mai facem setup SSH manual aici, se ocupă acțiunea de mai jos
 
-      - name: Deploy BE on server
-        run: |
-          SSH_OPTS="-o StrictHostKeyChecking=no -o IdentitiesOnly=yes"
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_rsa $SSH_OPTS \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
-            'cd /srv/total_app && docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} && docker compose pull api && docker compose up -d api'
+      - name: Deploy BE via Cloudflare Tunnel
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ssh.mydomain.ro                     # hostname-ul din Cloudflare Access
+          port: 22                                  # portul SSH de pe server (în mod normal 22)
+          username: ${{ secrets.SERVER_USER }}      # userul de pe server (ex: alex, ubuntu, etc.)
+          private_key_filename: id_rsa              # numele fișierului ce va fi creat în runner
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY }}   # cheia privată din GitHub Secrets
+          service_token_id: ${{ secrets.CF_TOKEN_ID }}        # Service Token ID (Cloudflare)
+          service_token_secret: ${{ secrets.CF_TOKEN_SECRET }}# Service Token Secret (Cloudflare)
+          commands: >
+            cd /srv/total_app &&
+            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} &&
+            docker compose pull api &&
+            docker compose up -d api
