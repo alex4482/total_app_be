@@ -32,7 +32,7 @@ jobs:
       - name: Deploy BE via Cloudflare Tunnel
         uses: and-fm/cloudflared-ssh-action@v3
         with:
-          host: box-ssh.donix.ro                     # hostname-ul din Cloudflare Access
+          host: deploy-ssh.donix.ro                     # hostname-ul din Cloudflare Access
           port: 22                                  # portul SSH de pe server (în mod normal 22)
           username: ${{ secrets.SERVER_USER }}      # userul de pe server (ex: alex, ubuntu, etc.)
           private_key_filename: id_rsa              # numele fișierului ce va fi creat în runner
