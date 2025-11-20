@@ -38,7 +38,7 @@ jobs:
           private_key_filename: id_rsa              # numele fișierului ce va fi creat în runner
           private_key_value: ${{ secrets.SSH_PRIVATE_KEY }}   # cheia privată din GitHub Secrets
           service_token_id: ${{ secrets.CF_TOKEN_ID }}        # Service Token ID (Cloudflare)
-          service_token_secret: ${{ secrets.CF_TOKEN_SECRET }}# Service Token Secret (Cloudflare)
+          service_token_secret: ${{ secrets.CF_TOKEN_SECRET }} # Service Token Secret (Cloudflare)
           commands: >
             cd /opt/total_app &&
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} &&
