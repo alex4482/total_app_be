@@ -32,7 +32,7 @@ jobs:
       - name: Deploy BE via Cloudflare Tunnel
         uses: and-fm/cloudflared-ssh-action@v3
         with:
-          host: ssh.mydomain.ro                     # hostname-ul din Cloudflare Access
+          host: box-ssh.donix.ro                     # hostname-ul din Cloudflare Access
           port: 22                                  # portul SSH de pe server (în mod normal 22)
           username: ${{ secrets.SERVER_USER }}      # userul de pe server (ex: alex, ubuntu, etc.)
           private_key_filename: id_rsa              # numele fișierului ce va fi creat în runner
@@ -40,7 +40,7 @@ jobs:
           service_token_id: ${{ secrets.CF_TOKEN_ID }}        # Service Token ID (Cloudflare)
           service_token_secret: ${{ secrets.CF_TOKEN_SECRET }}# Service Token Secret (Cloudflare)
           commands: >
-            cd /srv/total_app &&
+            cd /opt/total_app &&
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} &&
             docker compose pull api &&
             docker compose up -d api
