@@ -14,6 +14,69 @@ CREATE SEQUENCE IF NOT EXISTS backup_metadata_seq
     NO MAXVALUE
     CACHE 1;
 
+CREATE SEQUENCE IF NOT EXISTS location_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS tenant_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS index_counter_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS index_data_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS tenant_rental_data_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS service_formula_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS service_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS service_monthly_values_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE SEQUENCE IF NOT EXISTS email_preset_seq
+    START WITH 1
+    INCREMENT BY 50
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
 -- ============================================================================
 -- ENUMS (PostgreSQL doesn't have native enums, using VARCHAR with CHECK constraints)
 -- ============================================================================
@@ -115,7 +178,7 @@ CREATE TABLE IF NOT EXISTS replaced_counter_index_data (
 CREATE TABLE IF NOT EXISTS tenant_rental_data (
     id BIGINT NOT NULL PRIMARY KEY,
     tenant_id BIGINT NOT NULL,
-    rental_space_id BIGINT, -- OneToOne with RentalSpace (Hibernate will create this column automatically)
+    rental_space_name BIGINT, -- OneToOne with RentalSpace (references rental_space.name which is the primary key)
     start_date DATE,
     end_date DATE,
     rent DOUBLE PRECISION,
@@ -123,7 +186,7 @@ CREATE TABLE IF NOT EXISTS tenant_rental_data (
     contract_number VARCHAR(255),
     contract_date DATE,
     CONSTRAINT fk_rental_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE,
-    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_id) REFERENCES rental_space(name) ON DELETE CASCADE
+    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_name) REFERENCES rental_space(name) ON DELETE CASCADE
 );
 
 -- Add foreign key constraint from rental_space to tenant_rental_data (after both tables exist)
