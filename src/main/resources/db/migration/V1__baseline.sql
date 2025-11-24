@@ -62,8 +62,7 @@ CREATE TABLE IF NOT EXISTS room (
 CREATE TABLE IF NOT EXISTS rental_space (
     name BIGINT NOT NULL PRIMARY KEY,
     rental_agreement_id BIGINT,
-    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES room(id) ON DELETE CASCADE,
-    CONSTRAINT fk_rental_space_agreement FOREIGN KEY (rental_agreement_id) REFERENCES tenant_rental_data(id) ON DELETE SET NULL
+    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES room(id) ON DELETE CASCADE
 );
 
 -- Tenant
@@ -126,6 +125,11 @@ CREATE TABLE IF NOT EXISTS tenant_rental_data (
     CONSTRAINT fk_rental_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE,
     CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_id) REFERENCES rental_space(name) ON DELETE CASCADE
 );
+
+-- Add foreign key constraint from rental_space to tenant_rental_data (after both tables exist)
+ALTER TABLE rental_space 
+    ADD CONSTRAINT fk_rental_space_agreement 
+    FOREIGN KEY (rental_agreement_id) REFERENCES tenant_rental_data(id) ON DELETE SET NULL;
 
 -- ServiceFormula (must be created before Service)
 CREATE TABLE IF NOT EXISTS service_formula (
