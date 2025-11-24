@@ -38,20 +38,29 @@ CREATE TABLE IF NOT EXISTS location (
     official_name VARCHAR(255),
     location VARCHAR(50),
     mp INTEGER,
-    type VARCHAR(50),
-    building_id BIGINT, -- For Room/RentalSpace
-    ground_level BOOLEAN, -- For Room/RentalSpace
-    CONSTRAINT fk_room_building FOREIGN KEY (building_id) REFERENCES location(id) ON DELETE CASCADE
+    type VARCHAR(50)
 );
 
--- Building extends Location
--- (uses same table via JOINED inheritance)
+-- Building extends Location (JOINED inheritance)
+CREATE TABLE IF NOT EXISTS building (
+    id BIGINT NOT NULL PRIMARY KEY,
+    CONSTRAINT fk_building_location FOREIGN KEY (id) REFERENCES location(id) ON DELETE CASCADE
+);
 
--- Room extends Location
--- (uses same table via JOINED inheritance)
+-- Room extends Location (JOINED inheritance)
+CREATE TABLE IF NOT EXISTS room (
+    id BIGINT NOT NULL PRIMARY KEY,
+    building_id BIGINT,
+    ground_level BOOLEAN,
+    CONSTRAINT fk_room_location FOREIGN KEY (id) REFERENCES location(id) ON DELETE CASCADE,
+    CONSTRAINT fk_room_building FOREIGN KEY (building_id) REFERENCES building(id) ON DELETE CASCADE
+);
 
--- RentalSpace extends Room
--- (uses same table via JOINED inheritance, identified by dtype='RentalSpace')
+-- RentalSpace extends Room (JOINED inheritance)
+CREATE TABLE IF NOT EXISTS rental_space (
+    name VARCHAR(255) NOT NULL PRIMARY KEY,
+    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES location(name) ON DELETE CASCADE
+);
 
 -- Tenant
 CREATE TABLE IF NOT EXISTS tenant (
@@ -86,10 +95,16 @@ CREATE TABLE IF NOT EXISTS index_data (
     unit_price DOUBLE PRECISION,
     total_cost DOUBLE PRECISION,
     counter_id BIGINT NOT NULL,
-    old_index_data_id BIGINT, -- For ReplacedCounterIndexData
-    new_counter_initial_index DOUBLE PRECISION, -- For ReplacedCounterIndexData
-    replacement_date DATE, -- For ReplacedCounterIndexData
-    CONSTRAINT fk_index_data_counter FOREIGN KEY (counter_id) REFERENCES index_counter(id) ON DELETE CASCADE,
+    CONSTRAINT fk_index_data_counter FOREIGN KEY (counter_id) REFERENCES index_counter(id) ON DELETE CASCADE
+);
+
+-- ReplacedCounterIndexData extends IndexData (JOINED inheritance)
+CREATE TABLE IF NOT EXISTS replaced_counter_index_data (
+    id BIGINT NOT NULL PRIMARY KEY,
+    old_index_data_id BIGINT NOT NULL UNIQUE,
+    new_counter_initial_index DOUBLE PRECISION,
+    replacement_date DATE,
+    CONSTRAINT fk_replaced_index_data FOREIGN KEY (id) REFERENCES index_data(id) ON DELETE CASCADE,
     CONSTRAINT fk_replaced_old_data FOREIGN KEY (old_index_data_id) REFERENCES index_data(id) ON DELETE CASCADE
 );
 
