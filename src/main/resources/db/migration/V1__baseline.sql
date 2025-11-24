@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS tenant_rental_data (
     contract_number VARCHAR(255),
     contract_date DATE,
     CONSTRAINT fk_rental_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE,
-    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_id) REFERENCES rental_space(id) ON DELETE CASCADE
+    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_id) REFERENCES rental_space(name) ON DELETE CASCADE
 );
 
 -- ServiceFormula (must be created before Service)
