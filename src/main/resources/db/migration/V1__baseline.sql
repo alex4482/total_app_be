@@ -57,9 +57,11 @@ CREATE TABLE IF NOT EXISTS room (
 );
 
 -- RentalSpace extends Room (JOINED inheritance)
+-- @PrimaryKeyJoinColumn(name = "name") means the join column is named "name" (not "id")
+-- This column references room.id (the parent's primary key)
 CREATE TABLE IF NOT EXISTS rental_space (
-    id BIGINT NOT NULL PRIMARY KEY,
-    CONSTRAINT fk_rental_space_room FOREIGN KEY (id) REFERENCES room(id) ON DELETE CASCADE
+    name BIGINT NOT NULL PRIMARY KEY,
+    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES room(id) ON DELETE CASCADE
 );
 
 -- Tenant
