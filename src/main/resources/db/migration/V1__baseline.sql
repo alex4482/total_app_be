@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS location (
     dtype VARCHAR(31) NOT NULL, -- Discriminator: Building, Room, RentalSpace
     name VARCHAR(255) NOT NULL UNIQUE,
     official_name VARCHAR(255),
-    location VARCHAR(50),
+    location SMALLINT, -- BuildingLocation enum (ORDINAL - implicit)
     mp INTEGER,
-    type VARCHAR(50)
+    type SMALLINT -- LocationType enum (ORDINAL - implicit)
 );
 
 -- Building extends Location (JOINED inheritance)
@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS room (
 
 -- RentalSpace extends Room (JOINED inheritance)
 CREATE TABLE IF NOT EXISTS rental_space (
-    name VARCHAR(255) NOT NULL PRIMARY KEY,
-    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES location(name) ON DELETE CASCADE
+    id BIGINT NOT NULL PRIMARY KEY,
+    CONSTRAINT fk_rental_space_room FOREIGN KEY (id) REFERENCES room(id) ON DELETE CASCADE
 );
 
 -- Tenant
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS replaced_counter_index_data (
 CREATE TABLE IF NOT EXISTS tenant_rental_data (
     id BIGINT NOT NULL PRIMARY KEY,
     tenant_id BIGINT NOT NULL,
-    rental_space_name VARCHAR(255) NOT NULL, -- OneToOne with RentalSpace (by name)
+    rental_space_id BIGINT, -- OneToOne with RentalSpace (Hibernate will create this column automatically)
     start_date DATE,
     end_date DATE,
     rent DOUBLE PRECISION,
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS tenant_rental_data (
     contract_number VARCHAR(255),
     contract_date DATE,
     CONSTRAINT fk_rental_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE,
-    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_name) REFERENCES location(name) ON DELETE CASCADE
+    CONSTRAINT fk_rental_space FOREIGN KEY (rental_space_id) REFERENCES rental_space(id) ON DELETE CASCADE
 );
 
 -- ServiceFormula (must be created before Service)
