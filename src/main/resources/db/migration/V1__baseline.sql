@@ -61,7 +61,9 @@ CREATE TABLE IF NOT EXISTS room (
 -- This column references room.id (the parent's primary key)
 CREATE TABLE IF NOT EXISTS rental_space (
     name BIGINT NOT NULL PRIMARY KEY,
-    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES room(id) ON DELETE CASCADE
+    rental_agreement_id BIGINT,
+    CONSTRAINT fk_rental_space_room FOREIGN KEY (name) REFERENCES room(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rental_space_agreement FOREIGN KEY (rental_agreement_id) REFERENCES tenant_rental_data(id) ON DELETE SET NULL
 );
 
 -- Tenant
