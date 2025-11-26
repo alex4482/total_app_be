@@ -171,9 +171,11 @@ public class TenantImportService {
             }
         }
 
-        // Email field (column: "Email" or "Emails")
+        // Email field (column: "Email", "Emails", "Email-uri", "Emailuri", etc.)
         Integer emailCol = columnMap.get("email");
         if (emailCol == null) emailCol = columnMap.get("emails");
+        if (emailCol == null) emailCol = columnMap.get("emailuri");
+        if (emailCol == null) emailCol = columnMap.get("email-uri");
         if (emailCol != null) {
             String emailStr = getCellValueAsString(row.getCell(emailCol));
             if (emailStr != null && !emailStr.trim().isEmpty()) {
