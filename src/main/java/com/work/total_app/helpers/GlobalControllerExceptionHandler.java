@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Global exception handler for all REST endpoints.
@@ -54,6 +55,28 @@ public class GlobalControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.error("The requested media type is not acceptable. Please use application/json."));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResponseStatusException(ResponseStatusException e) {
+        HttpStatus status = HttpStatus.resolve(e.getStatusCode().value());
+        String reason = e.getReason();
+        
+        // Log authentication errors at WARN level (they're expected in normal operation)
+        if (status != null && status.is4xxClientError()) {
+            if (reason != null && (reason.contains("invalid refresh") || reason.contains("refresh expired") || reason.contains("refresh reuse"))) {
+                log.warn("Authentication error: {} - {}", status.value(), reason);
+            } else {
+                log.warn("Client error: {} - {}", status.value(), reason);
+            }
+        } else {
+            log.error("Server error: {} - {}", status != null ? status.value() : e.getStatusCode().value(), reason, e);
+        }
+        
+        // Explicitly set Content-Type to JSON
+        return ResponseEntity.status(e.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ApiResponse.error(reason != null ? reason : "An error occurred"));
     }
 
     @ExceptionHandler(Exception.class)
