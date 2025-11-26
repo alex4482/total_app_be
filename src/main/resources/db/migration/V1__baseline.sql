@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS location_observations (
     observations_order INTEGER,
     message TEXT,
     type VARCHAR(50),
-    PRIMARY KEY (location_id, observations_order),
+    PRIMARY KEY (location_id, message),
     CONSTRAINT fk_location_obs_location FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE
 );
 
@@ -342,7 +342,7 @@ CREATE TABLE IF NOT EXISTS tenant_emails (
     tenant_id BIGINT NOT NULL,
     emails_order INTEGER,
     emails VARCHAR(255),
-    PRIMARY KEY (tenant_id, emails_order),
+    PRIMARY KEY (tenant_id, emails),
     CONSTRAINT fk_tenant_emails_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE
 );
 
@@ -351,7 +351,7 @@ CREATE TABLE IF NOT EXISTS tenant_phone_numbers (
     tenant_id BIGINT NOT NULL,
     phone_numbers_order INTEGER,
     phone_numbers VARCHAR(50),
-    PRIMARY KEY (tenant_id, phone_numbers_order),
+    PRIMARY KEY (tenant_id, phone_numbers),
     CONSTRAINT fk_tenant_phones_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE
 );
 
@@ -361,7 +361,7 @@ CREATE TABLE IF NOT EXISTS tenant_observations (
     observations_order INTEGER,
     message TEXT,
     type VARCHAR(50),
-    PRIMARY KEY (tenant_id, observations_order),
+    PRIMARY KEY (tenant_id, message),
     CONSTRAINT fk_tenant_obs_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE
 );
 
@@ -370,17 +370,17 @@ CREATE TABLE IF NOT EXISTS tenant_attachment_ids (
     tenant_id BIGINT NOT NULL,
     attachment_ids_order INTEGER,
     attachment_ids VARCHAR(255),
-    PRIMARY KEY (tenant_id, attachment_ids_order),
+    PRIMARY KEY (tenant_id, attachment_ids),
     CONSTRAINT fk_tenant_attachments_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE
 );
 
 -- TenantRentalData price changes
 CREATE TABLE IF NOT EXISTS tenant_rental_data_price_changes (
+    id BIGSERIAL PRIMARY KEY,
     tenant_rental_data_id BIGINT NOT NULL,
     price_changes_order INTEGER,
     new_price DOUBLE PRECISION,
     change_time DATE,
-    PRIMARY KEY (tenant_rental_data_id, price_changes_order),
     CONSTRAINT fk_price_changes_rental FOREIGN KEY (tenant_rental_data_id) REFERENCES tenant_rental_data(id) ON DELETE CASCADE
 );
 
@@ -394,7 +394,7 @@ CREATE TABLE IF NOT EXISTS tenant_rental_data_active_services (
     active_from DATE,
     active_until DATE,
     notes VARCHAR(1000),
-    PRIMARY KEY (tenant_rental_data_id, active_services_order),
+    PRIMARY KEY (tenant_rental_data_id, service_id),
     CONSTRAINT fk_active_services_rental FOREIGN KEY (tenant_rental_data_id) REFERENCES tenant_rental_data(id) ON DELETE CASCADE
 );
 
