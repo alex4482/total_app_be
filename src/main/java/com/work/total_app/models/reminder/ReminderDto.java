@@ -25,5 +25,7 @@ public class ReminderDto {
     private Boolean active;
     private Instant createdAt;
     private Instant updatedAt;
+    private ReminderType reminderType;
+    private List<Instant> scheduledTimes;
 }
 

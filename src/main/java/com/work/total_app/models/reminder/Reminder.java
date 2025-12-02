@@ -44,6 +44,13 @@ public class Reminder {
     @Column(name = "grouping_name")
     private List<String> groupings = new ArrayList<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reminder_type", nullable = false, length = 20)
+    private ReminderType reminderType = ReminderType.STANDARD;
+
+    @OneToMany(mappedBy = "reminder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ReminderSchedule> schedules = new ArrayList<>();
+
     @Column(name = "emails_sent_count", nullable = false)
     private Integer emailsSentCount = 0;
 

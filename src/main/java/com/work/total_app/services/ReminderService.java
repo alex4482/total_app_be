@@ -3,6 +3,9 @@ package com.work.total_app.services;
 import com.work.total_app.models.reminder.CreateReminderDto;
 import com.work.total_app.models.reminder.Reminder;
 import com.work.total_app.models.reminder.ReminderDto;
+import com.work.total_app.models.reminder.ReminderSchedule;
+import com.work.total_app.models.reminder.ReminderType;
+import com.work.total_app.models.reminder.UpdateReminderDto;
 import com.work.total_app.repositories.ReminderRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +38,26 @@ public class ReminderService {
         reminder.setWarningEmailCount(dto.getWarningEmailCount());
         reminder.setRecipientEmail(dto.getRecipientEmail());
         reminder.setGroupings(dto.getGroupings() != null ? dto.getGroupings() : List.of());
+        
+        // Set reminder type (default to STANDARD if not specified)
+        ReminderType reminderType = dto.getReminderType() != null ? dto.getReminderType() : ReminderType.STANDARD;
+        reminder.setReminderType(reminderType);
+
+        // For CUSTOM type, create schedule entries
+        if (reminderType == ReminderType.CUSTOM && dto.getScheduledTimes() != null && !dto.getScheduledTimes().isEmpty()) {
+            List<ReminderSchedule> schedules = new ArrayList<>();
+            for (Instant scheduledTime : dto.getScheduledTimes()) {
+                ReminderSchedule schedule = new ReminderSchedule();
+                schedule.setReminder(reminder);
+                schedule.setScheduledTime(scheduledTime);
+                schedule.setSent(false);
+                schedules.add(schedule);
+            }
+            reminder.setSchedules(schedules);
+        }
 
         Reminder saved = reminderRepository.save(reminder);
-        log.info("Created reminder with ID: {}", saved.getId());
+        log.info("Created reminder with ID: {} and type: {}", saved.getId(), reminderType);
         return toDto(saved);
     }
 
@@ -107,6 +127,59 @@ public class ReminderService {
     }
 
     /**
+     * Update reminder details.
+     */
+    @Transactional
+    public ReminderDto updateReminder(UUID id, UpdateReminderDto dto) {
+        Reminder reminder = reminderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reminder not found with id: " + id));
+
+        // Update only fields that are provided (not null)
+        if (dto.getEmailTitle() != null) {
+            reminder.setEmailTitle(dto.getEmailTitle());
+        }
+        if (dto.getEmailMessage() != null) {
+            reminder.setEmailMessage(dto.getEmailMessage());
+        }
+        if (dto.getExpirationDate() != null) {
+            reminder.setExpirationDate(dto.getExpirationDate());
+        }
+        if (dto.getWarningStartDate() != null) {
+            reminder.setWarningStartDate(dto.getWarningStartDate());
+        }
+        if (dto.getWarningEmailCount() != null) {
+            reminder.setWarningEmailCount(dto.getWarningEmailCount());
+        }
+        if (dto.getRecipientEmail() != null) {
+            reminder.setRecipientEmail(dto.getRecipientEmail());
+        }
+        if (dto.getGroupings() != null) {
+            reminder.setGroupings(dto.getGroupings());
+        }
+        if (dto.getReminderType() != null) {
+            reminder.setReminderType(dto.getReminderType());
+        }
+
+        // Update schedules if provided (only for CUSTOM type)
+        if (dto.getScheduledTimes() != null && reminder.getReminderType() == ReminderType.CUSTOM) {
+            // Clear existing schedules
+            reminder.getSchedules().clear();
+            // Add new schedules
+            for (Instant scheduledTime : dto.getScheduledTimes()) {
+                ReminderSchedule schedule = new ReminderSchedule();
+                schedule.setReminder(reminder);
+                schedule.setScheduledTime(scheduledTime);
+                schedule.setSent(false);
+                reminder.getSchedules().add(schedule);
+            }
+        }
+
+        Reminder saved = reminderRepository.save(reminder);
+        log.info("Updated reminder with ID: {}", saved.getId());
+        return toDto(saved);
+    }
+
+    /**
      * Stop or activate a reminder manually.
      */
     @Transactional
@@ -139,6 +212,17 @@ public class ReminderService {
         dto.setActive(reminder.getActive());
         dto.setCreatedAt(reminder.getCreatedAt());
         dto.setUpdatedAt(reminder.getUpdatedAt());
+        dto.setReminderType(reminder.getReminderType() != null ? reminder.getReminderType() : ReminderType.STANDARD);
+        
+        // Include scheduled times for CUSTOM type
+        if (reminder.getReminderType() == ReminderType.CUSTOM && reminder.getSchedules() != null) {
+            List<Instant> scheduledTimes = reminder.getSchedules().stream()
+                    .map(ReminderSchedule::getScheduledTime)
+                    .sorted()
+                    .collect(Collectors.toList());
+            dto.setScheduledTimes(scheduledTimes);
+        }
+        
         return dto;
     }
 }

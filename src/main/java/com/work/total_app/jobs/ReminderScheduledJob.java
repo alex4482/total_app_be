@@ -5,7 +5,10 @@ import com.work.total_app.helpers.EmailHelper;
 import com.work.total_app.models.email.EmailData;
 import com.work.total_app.models.email.EEmailSendStatus;
 import com.work.total_app.models.reminder.Reminder;
+import com.work.total_app.models.reminder.ReminderSchedule;
+import com.work.total_app.models.reminder.ReminderType;
 import com.work.total_app.repositories.ReminderRepository;
+import com.work.total_app.repositories.ReminderScheduleRepository;
 import com.work.total_app.services.ReminderService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +41,9 @@ public class ReminderScheduledJob {
     @Autowired
     private ReminderProperties reminderProperties;
 
+    @Autowired
+    private ReminderScheduleRepository reminderScheduleRepository;
+
     /**
      * Check for reminders that need emails sent.
      * Runs once a day at 9:00 AM.
@@ -47,21 +53,26 @@ public class ReminderScheduledJob {
         log.info("Starting reminder processing job...");
         Instant now = Instant.now();
 
-        // Process warning emails
+        // Process STANDARD type reminders
         processWarningEmails(now);
-
-        // Process expired reminders
         processExpiredReminders(now);
+
+        // Process CUSTOM type reminders
+        processCustomReminders(now);
 
         log.info("Reminder processing job completed");
     }
 
     /**
-     * Process reminders that need warning emails.
+     * Process reminders that need warning emails (STANDARD type only).
      */
     private void processWarningEmails(Instant now) {
         List<Reminder> reminders = reminderRepository.findRemindersNeedingWarningEmails(now);
-        log.info("Found {} reminders needing warning emails", reminders.size());
+        // Filter only STANDARD type reminders
+        reminders = reminders.stream()
+                .filter(r -> r.getReminderType() == null || r.getReminderType() == ReminderType.STANDARD)
+                .toList();
+        log.info("Found {} STANDARD reminders needing warning emails", reminders.size());
 
         for (Reminder reminder : reminders) {
             try {
@@ -112,12 +123,16 @@ public class ReminderScheduledJob {
     }
 
     /**
-     * Process reminders that have expired.
+     * Process reminders that have expired (STANDARD type only).
      * These reminders will continue sending emails at the same interval until manually stopped.
      */
     private void processExpiredReminders(Instant now) {
         List<Reminder> expiredReminders = reminderRepository.findExpiredReminders(now);
-        log.info("Found {} expired reminders that are still active", expiredReminders.size());
+        // Filter only STANDARD type reminders
+        expiredReminders = expiredReminders.stream()
+                .filter(r -> r.getReminderType() == null || r.getReminderType() == ReminderType.STANDARD)
+                .toList();
+        log.info("Found {} expired STANDARD reminders that are still active", expiredReminders.size());
 
         for (Reminder reminder : expiredReminders) {
             try {
@@ -128,6 +143,69 @@ public class ReminderScheduledJob {
             } catch (Exception e) {
                 log.error("Error processing expiration email for reminder {}: {}", reminder.getId(), e.getMessage(), e);
             }
+        }
+    }
+
+    /**
+     * Process CUSTOM type reminders that have scheduled times due.
+     */
+    private void processCustomReminders(Instant now) {
+        List<Reminder> customReminders = reminderRepository.findByReminderTypeAndActiveTrue(ReminderType.CUSTOM);
+        log.info("Found {} active CUSTOM reminders", customReminders.size());
+
+        for (Reminder reminder : customReminders) {
+            try {
+                // Find unsent schedules that are due
+                List<ReminderSchedule> dueSchedules = reminderScheduleRepository.findUnsentSchedulesForReminder(reminder.getId(), now);
+                
+                for (ReminderSchedule schedule : dueSchedules) {
+                    sendCustomReminderEmail(reminder, schedule);
+                }
+            } catch (Exception e) {
+                log.error("Error processing custom reminder {}: {}", reminder.getId(), e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * Send email for a custom reminder at a specific scheduled time.
+     */
+    private void sendCustomReminderEmail(Reminder reminder, ReminderSchedule schedule) {
+        String subject = reminderProperties.getEmailPrefix() + reminder.getEmailTitle();
+        String message = reminder.getEmailMessage() + reminderProperties.getExtraMessageSuffix();
+        
+        // Add context about when this was scheduled
+        if (schedule.getScheduledTime().isBefore(Instant.now())) {
+            long daysAgo = ChronoUnit.DAYS.between(schedule.getScheduledTime(), Instant.now());
+            message += "\n\n📅 Acest reminder a fost programat pentru " + schedule.getScheduledTime() + 
+                      " (acum " + daysAgo + " zile).";
+        } else {
+            message += "\n\n📅 Acest reminder a fost programat pentru " + schedule.getScheduledTime() + ".";
+        }
+
+        EmailData emailData = new EmailData();
+        emailData.setSubject(subject);
+        emailData.setMessage(message);
+        emailData.setRecipients(new String[]{reminder.getRecipientEmail()});
+
+        EEmailSendStatus status = emailHelper.createAndSendMail(emailData);
+        
+        if (status == EEmailSendStatus.OK) {
+            // Mark schedule as sent
+            schedule.setSent(true);
+            schedule.setSentAt(Instant.now());
+            reminderScheduleRepository.save(schedule);
+            
+            // Update reminder's email count
+            reminder.setEmailsSentCount(reminder.getEmailsSentCount() + 1);
+            reminder.setLastEmailSentAt(Instant.now());
+            reminderRepository.save(reminder);
+            
+            log.info("Custom reminder email sent successfully for reminder {} at scheduled time {}", 
+                    reminder.getId(), schedule.getScheduledTime());
+        } else {
+            log.error("Failed to send custom reminder email for reminder {} at scheduled time {}", 
+                    reminder.getId(), schedule.getScheduledTime());
         }
     }
 

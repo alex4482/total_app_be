@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class CreateReminderDto {
+public class UpdateReminderDto {
 
     /**
      * Email title (will have a prefix added)

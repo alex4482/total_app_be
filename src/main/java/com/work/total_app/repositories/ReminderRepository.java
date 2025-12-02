@@ -1,6 +1,7 @@
 package com.work.total_app.repositories;
 
 import com.work.total_app.models.reminder.Reminder;
+import com.work.total_app.models.reminder.ReminderType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,5 +42,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, UUID> {
      */
     @Query("SELECT DISTINCT r FROM Reminder r JOIN r.groupings g WHERE g = :grouping")
     List<Reminder> findByGrouping(@Param("grouping") String grouping);
+
+    /**
+     * Find active reminders by type.
+     */
+    List<Reminder> findByReminderTypeAndActiveTrue(ReminderType reminderType);
 }
 

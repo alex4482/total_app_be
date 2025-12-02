@@ -3,6 +3,7 @@ package com.work.total_app.controllers;
 import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.reminder.CreateReminderDto;
 import com.work.total_app.models.reminder.ReminderDto;
+import com.work.total_app.models.reminder.UpdateReminderDto;
 import com.work.total_app.services.ReminderService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,13 @@ public class ReminderController {
     public ResponseEntity<ApiResponse<Void>> deleteReminder(@PathVariable UUID id) {
         reminderService.deleteReminder(id);
         return ResponseEntity.ok(ApiResponse.success("Reminder deleted successfully", null));
+    }
+
+    @PutMapping("/{id}")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<ReminderDto>> updateReminder(@PathVariable UUID id, @RequestBody UpdateReminderDto dto) {
+        ReminderDto updated = reminderService.updateReminder(id, dto);
+        return ResponseEntity.ok(ApiResponse.success("Reminder updated successfully", updated));
     }
 
     @PutMapping("/{id}/active")
