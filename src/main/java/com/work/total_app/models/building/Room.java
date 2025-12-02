@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorValue("Room")
 public class Room extends Location{
 
     // ROOM → BUILDING (owning side)

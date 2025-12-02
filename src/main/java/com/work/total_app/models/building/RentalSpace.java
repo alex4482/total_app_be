@@ -15,6 +15,7 @@ import java.util.List;
 @Data
 @Entity
 @PrimaryKeyJoinColumn(name = "name")
+@DiscriminatorValue("RentalSpace")
 public class RentalSpace extends Room {
 
     @OneToOne(fetch = FetchType.EAGER, optional = true)

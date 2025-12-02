@@ -14,7 +14,8 @@ import java.util.List;
 
 @Data
 @Entity
-@Inheritance(strategy = InheritanceType.JOINED) // or SINGLE_TABLE
+@Inheritance(strategy = InheritanceType.JOINED)
+@DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
 public abstract class Location {
     @Id
     @GeneratedValue
