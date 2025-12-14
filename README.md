@@ -36,10 +36,11 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 - 🔐 **Autentificare Avansată** 
   - Multi-user authentication cu JWT
   - 2FA prin email după 6 încercări eșuate
-  - Rate limiting și brute-force protection
-  - HttpOnly cookies pentru refresh tokens
+  - Rate limiting și brute-force protection (configurabil)
+  - HttpOnly cookies pentru refresh tokens (secure flag configurabil)
   - IP & User Agent tracking
   - Email whitelist pentru coduri de verificare
+  - Validări automate cu @Valid
 - 👥 **Gestionare Tenants** - CRUD complet, import Excel, bulk operations
 - 🏗️ **Buildings & Rental Spaces** - Gestiune clădiri și spații de închiriat
 - 📁 **File Management** - Upload, download, ZIP, filesystem storage (metadata în DB)
@@ -48,6 +49,9 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 - 💾 **Backup & Restore** - Backup automat/manual, export Excel/JSON, Google Drive integration
 - 🗄️ **Database Migrations** - Flyway pentru migrări controlate în producție
 - 👮 **Admin API** - Management utilizatori și email whitelist
+- 💚 **Health Checks** - Monitoring endpoints pentru status și database
+- 🛡️ **Security Headers** - CSP, HSTS, X-Frame-Options, X-XSS-Protection
+- 🧪 **Comprehensive Testing** - 28+ teste unitare și de integrare
 
 ## 🛠️ Tech Stack
 
@@ -303,7 +307,26 @@ Content-Type: application/json
 
 ## 🐳 Docker Deployment
 
-### Build Image
+### Quick Start cu Docker Compose
+
+```bash
+# 1. Setup environment variables
+cp .env.example .env
+nano .env  # Editează JWT_SECRET și email settings
+
+# 2. Start services
+docker-compose up -d
+
+# 3. Check health
+curl http://localhost:8080/health
+
+# 4. View logs
+docker-compose logs -f app
+```
+
+**Pentru ghid complet:** Vezi **[DOCKER_GUIDE.md](DOCKER_GUIDE.md)**
+
+### Build Image Manual
 ```bash
 docker build -t total_app:latest .
 ```
@@ -356,15 +379,25 @@ volumes:
 ## 🧪 Testing
 
 ```bash
-# Run all tests
+# Run all tests (28+ tests)
 ./mvnw test
 
+# Run with coverage report
+./mvnw test jacoco:report
+
 # Run specific test
-./mvnw test -Dtest=TotalAppApplicationTests
+./mvnw test -Dtest=LocalAuthServiceTest
 
 # Skip tests during build
 ./mvnw clean package -DskipTests
 ```
+
+**Test Coverage:**
+- ✅ 13 teste unitare pentru LocalAuthService
+- ✅ 16 teste de integrare pentru AuthenticationController
+- ✅ Coverage: Login flow, 2FA, validări, error handling
+
+**Pentru ghid complet de testare:** Vezi **[TESTING_GUIDE.md](TESTING_GUIDE.md)**
 
 ## 📝 Logging
 
@@ -508,11 +541,22 @@ Pentru întrebări sau probleme:
 
 - ✅ **Multi-user support** - Individual user accounts with username/password
 - ✅ **Two-Factor Authentication** - Email-based 2FA after 6 failed attempts
-- ✅ **Rate Limiting** - IP-based (10/15min) and user-based protection
+- ✅ **Rate Limiting** - IP-based (10/15min) and user-based protection (configurable)
 - ✅ **Email Whitelist** - Only approved emails receive verification codes
-- ✅ **HttpOnly Cookies** - XSS protection for refresh tokens
+- ✅ **HttpOnly Cookies** - XSS protection for refresh tokens (configurable secure flag)
 - ✅ **Session Tracking** - IP address and User Agent for each session
 - ✅ **Comprehensive Audit Logging** - All authentication events logged
 - ✅ **Admin Management API** - User and whitelist administration
 
-**Migration:** See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrading from v1.0
+### 🚀 Infrastructure & Quality Improvements
+
+- ✅ **Docker Compose** - One-command deployment cu PostgreSQL
+- ✅ **Health Checks** - `/health` și `/health/detailed` endpoints
+- ✅ **Security Headers** - CSP, HSTS, X-Frame-Options, X-XSS-Protection
+- ✅ **Global Exception Handler** - Uniform error responses
+- ✅ **Validation Framework** - Automatic @Valid validation
+- ✅ **Comprehensive Testing** - 28+ unit & integration tests
+- ✅ **Configurable Security** - Environment-specific settings (DEV/PROD)
+
+**Migration:** See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrading from v1.0  
+**Improvements:** See [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md) for detailed changelog

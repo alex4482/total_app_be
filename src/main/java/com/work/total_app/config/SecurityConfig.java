@@ -25,9 +25,19 @@ public class SecurityConfig {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
+                .headers(headers -> headers
+                    .contentSecurityPolicy(csp -> csp
+                        .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"))
+                    .xssProtection(xss -> xss.headerValue("1; mode=block"))
+                    .frameOptions(frame -> frame.deny())
+                    .httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .maxAgeInSeconds(31536000)) // 1 year
+                )
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/health", "/health/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(bearerFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

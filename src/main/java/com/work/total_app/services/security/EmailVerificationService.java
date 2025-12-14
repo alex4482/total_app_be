@@ -1,5 +1,6 @@
 package com.work.total_app.services.security;
 
+import com.work.total_app.config.SecurityProperties;
 import com.work.total_app.helpers.EmailHelper;
 import com.work.total_app.models.email.EEmailSendStatus;
 import com.work.total_app.models.email.EmailData;
@@ -29,9 +30,10 @@ public class EmailVerificationService {
     @Autowired
     private EmailWhitelistService emailWhitelistService;
     
+    @Autowired
+    private SecurityProperties securityProperties;
+    
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int CODE_EXPIRY_MINUTES = 15;
-    private static final int MAX_CODES_PER_HOUR = 5;
     
     /**
      * Generează și trimite un cod de verificare pe email
@@ -44,11 +46,11 @@ public class EmailVerificationService {
             return false;
         }
         
-        // Verifică rate limiting (max 5 coduri per oră)
+        // Verifică rate limiting (max codes per hour)
         Instant oneHourAgo = Instant.now().minus(Duration.ofHours(1));
         long recentCodes = verificationCodeRepository.countByUserAndCreatedAtAfter(user, oneHourAgo);
         
-        if (recentCodes >= MAX_CODES_PER_HOUR) {
+        if (recentCodes >= securityProperties.getEmailVerification().getMaxCodesPerHour()) {
             log.warn("Rate limit exceeded for user: {} (email: {})", user.getUsername(), email);
             return false;
         }
@@ -61,7 +63,8 @@ public class EmailVerificationService {
         verificationCode.setUser(user);
         verificationCode.setCode(code);
         verificationCode.setEmail(email);
-        verificationCode.setExpiresAt(Instant.now().plus(Duration.ofMinutes(CODE_EXPIRY_MINUTES)));
+        verificationCode.setExpiresAt(Instant.now().plus(Duration.ofMinutes(
+            securityProperties.getEmailVerification().getCodeExpiryMinutes())));
         verificationCode.setUsed(false);
         verificationCode.setRequestIp(requestIp);
         
@@ -125,7 +128,7 @@ public class EmailVerificationService {
             "Dacă nu ai solicitat acest cod, te rugăm să ignori acest email.\n\n" +
             "---\n" +
             "Acest email a fost generat automat de sistem.",
-            username, code, CODE_EXPIRY_MINUTES
+            username, code, securityProperties.getEmailVerification().getCodeExpiryMinutes()
         );
         
         emailData.setMessage(message);

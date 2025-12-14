@@ -1,5 +1,6 @@
 package com.work.total_app.controllers;
 
+import com.work.total_app.config.SecurityProperties;
 import com.work.total_app.models.authentication.*;
 import com.work.total_app.models.user.User;
 import com.work.total_app.models.user.UserPrincipal;
@@ -8,6 +9,7 @@ import com.work.total_app.services.authentication.AuthenticationService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,13 +32,16 @@ public class AuthenticationController {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private SecurityProperties securityProperties;
 
     /**
      * Login standard cu username și parolă
      */
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(
-            @RequestBody LoginRequest authRequest,
+            @Valid @RequestBody LoginRequest authRequest,
             HttpServletRequest request,
             HttpServletResponse response) {
         
@@ -110,7 +115,7 @@ public class AuthenticationController {
      */
     @PostMapping("/request-email-code")
     public ResponseEntity<Map<String, String>> requestEmailCode(
-            @RequestBody RequestEmailCodeRequest req,
+            @Valid @RequestBody RequestEmailCodeRequest req,
             HttpServletRequest request) {
         
         if (req == null || req.username() == null || req.password() == null || req.email() == null) {
@@ -195,7 +200,7 @@ public class AuthenticationController {
      * Register user
      */
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterUserRequest req) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterUserRequest req) {
         try {
             User user = authService.registerUser(req);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -212,7 +217,7 @@ public class AuthenticationController {
      */
     @PostMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(
-            @RequestBody ChangePasswordRequest req) {
+            @Valid @RequestBody ChangePasswordRequest req) {
         
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         
@@ -245,10 +250,10 @@ public class AuthenticationController {
         
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true); // Only HTTPS in production
+        cookie.setSecure(securityProperties.getCookies().isSecure()); // Configurable per environment
         cookie.setPath("/auth");
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", securityProperties.getCookies().getSameSite());
         
         response.addCookie(cookie);
     }
@@ -259,7 +264,7 @@ public class AuthenticationController {
     private void clearRefreshTokenCookie(HttpServletResponse response) {
         Cookie cookie = new Cookie("refreshToken", "");
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(securityProperties.getCookies().isSecure());
         cookie.setPath("/auth");
         cookie.setMaxAge(0);
         

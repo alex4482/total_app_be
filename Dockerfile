@@ -1,23 +1,54 @@
-# ===== Build (Maven) =====
-FROM maven:3.9-eclipse-temurin-21 AS build
+# Multi-stage build for smaller final image
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
 WORKDIR /app
 
-# Copiem întâi pom.xml pentru cache de dependențe
-COPY pom.xml ./
-RUN mvn -B -e -DskipTests dependency:go-offline
+# Copy Maven wrapper and pom.xml
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
 
-# Apoi sursele (evită -q ca să vezi eroarea!)
+# Download dependencies (cached layer)
+RUN ./mvnw dependency:go-offline
+
+# Copy source code
 COPY src ./src
 
-ENV SPRING_PROFILES_ACTIVE=prod
+# Build application
+RUN ./mvnw clean package -DskipTests
 
-RUN mvn -B -e -DskipTests -Dmaven.resources.encoding=UTF-8 package
-
-# ===== Runtime (JRE) =====
+# ===========================================
+# Runtime Stage
+# ===========================================
 FROM eclipse-temurin:21-jre-alpine
+
 WORKDIR /app
-VOLUME ["/data"]
-COPY --from=build /app/target/*.jar /app/app.jar
-ENV SERVER_PORT=8080
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user
+RUN addgroup -S spring && adduser -S spring -G spring
+
+# Create data directories
+RUN mkdir -p /app/data/FISIERE /app/data/backups /app/logs && \
+    chown -R spring:spring /app
+
+# Copy JAR from builder
+COPY --from=builder /app/target/*.jar app.jar
+
+# Switch to non-root user
+USER spring:spring
+
+# Expose port
 EXPOSE 8080
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Run application
+ENTRYPOINT ["java", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", \
+    "-jar", \
+    "app.jar"]

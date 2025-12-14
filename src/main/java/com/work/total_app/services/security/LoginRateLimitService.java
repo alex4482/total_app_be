@@ -1,5 +1,6 @@
 package com.work.total_app.services.security;
 
+import com.work.total_app.config.SecurityProperties;
 import com.work.total_app.models.user.LoginAttempt;
 import com.work.total_app.models.user.User;
 import com.work.total_app.repositories.LoginAttemptRepository;
@@ -22,10 +23,10 @@ public class LoginRateLimitService {
     @Autowired
     private UserRepository userRepository;
     
-    private static final int MAX_FAILED_ATTEMPTS_FOR_EMAIL_VERIFICATION = 6;
-    private static final int MAX_FAILED_ATTEMPTS_BY_IP = 10;
-    private static final int ACCOUNT_LOCK_MINUTES = 30;
-    private static final int RATE_LIMIT_WINDOW_MINUTES = 15;
+    @Autowired
+    private SecurityProperties securityProperties;
+    @Autowired
+    private SecurityProperties securityProperties;
     
     /**
      * Înregistrează o încercare de login
@@ -47,17 +48,18 @@ public class LoginRateLimitService {
                 user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
                 user.setLastFailedLoginAt(Instant.now());
                 
-                // Dacă a ajuns la 6 încercări eșuate, marchează că trebuie verificare prin email
-                if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS_FOR_EMAIL_VERIFICATION) {
+                // Dacă a ajuns la maxFailedAttempts, marchează că trebuie verificare prin email
+                if (user.getFailedLoginAttempts() >= securityProperties.getRateLimit().getMaxFailedAttempts()) {
                     user.setRequiresEmailVerification(true);
                     log.warn("User {} requires email verification after {} failed attempts", 
                         username, user.getFailedLoginAttempts());
                 }
                 
-                // Dacă a ajuns la 10 încercări eșuate, blochează contul pentru 30 minute
-                if (user.getFailedLoginAttempts() >= 10) {
+                // Dacă a ajuns la maxIpAttempts, blochează contul pentru lockDurationMinutes
+                if (user.getFailedLoginAttempts() >= securityProperties.getRateLimit().getMaxIpAttempts()) {
                     user.setAccountLocked(true);
-                    user.setAccountLockedUntil(Instant.now().plus(Duration.ofMinutes(ACCOUNT_LOCK_MINUTES)));
+                    user.setAccountLockedUntil(Instant.now().plus(Duration.ofMinutes(
+                        securityProperties.getRateLimit().getLockDurationMinutes())));
                     log.warn("User {} account locked until {} after {} failed attempts", 
                         username, user.getAccountLockedUntil(), user.getFailedLoginAttempts());
                 }
@@ -85,14 +87,15 @@ public class LoginRateLimitService {
      * Verifică dacă un IP a depășit limita de încercări eșuate
      */
     public boolean isIpRateLimited(String ip) {
-        Instant since = Instant.now().minus(Duration.ofMinutes(RATE_LIMIT_WINDOW_MINUTES));
+        Instant since = Instant.now().minus(Duration.ofMinutes(
+            securityProperties.getRateLimit().getWindowMinutes()));
         long failedAttempts = loginAttemptRepository.countFailedAttemptsByIpSince(ip, since);
         
-        boolean limited = failedAttempts >= MAX_FAILED_ATTEMPTS_BY_IP;
+        boolean limited = failedAttempts >= securityProperties.getRateLimit().getMaxIpAttempts();
         
         if (limited) {
             log.warn("IP {} is rate limited with {} failed attempts in last {} minutes", 
-                ip, failedAttempts, RATE_LIMIT_WINDOW_MINUTES);
+                ip, failedAttempts, securityProperties.getRateLimit().getWindowMinutes());
         }
         
         return limited;
