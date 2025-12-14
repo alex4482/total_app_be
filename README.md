@@ -33,7 +33,13 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 
 ## 📋 Caracteristici
 
-- 🔐 **Autentificare JWT** - Login securizat cu refresh tokens
+- 🔐 **Autentificare Avansată** 
+  - Multi-user authentication cu JWT
+  - 2FA prin email după 6 încercări eșuate
+  - Rate limiting și brute-force protection
+  - HttpOnly cookies pentru refresh tokens
+  - IP & User Agent tracking
+  - Email whitelist pentru coduri de verificare
 - 👥 **Gestionare Tenants** - CRUD complet, import Excel, bulk operations
 - 🏗️ **Buildings & Rental Spaces** - Gestiune clădiri și spații de închiriat
 - 📁 **File Management** - Upload, download, ZIP, filesystem storage (metadata în DB)
@@ -41,6 +47,7 @@ Backend API pentru gestionarea chiriilor, clădirilor, tenants, fișiere și com
 - 📊 **Index Counters** - Gestiune contoare (apă, gaz, electricitate) și citiri
 - 💾 **Backup & Restore** - Backup automat/manual, export Excel/JSON, Google Drive integration
 - 🗄️ **Database Migrations** - Flyway pentru migrări controlate în producție
+- 👮 **Admin API** - Management utilizatori și email whitelist
 
 ## 🛠️ Tech Stack
 
@@ -83,7 +90,9 @@ total_app/
 │   └── api-tests.http
 │
 ├── guides/              # Documentație API
-│   ├── 01-authentication.md
+│   ├── 01-authentication.md (legacy)
+│   ├── 02-authentication-complete.md (NEW - Complete Auth System)
+│   ├── 03-admin-api.md (NEW - Admin Management)
 │   ├── 02-tenants.md
 │   ├── 03-buildings.md
 │   ├── 04-files.md
@@ -91,6 +100,14 @@ total_app/
 │   ├── 06-index-counters.md
 │   ├── 07-database-migrations.md
 │   └── 08-backup-restore.md
+│
+├── database/            # Database scripts
+│   └── migration_auth_system.sql (NEW)
+│
+├── MIGRATION_GUIDE.md   # NEW - Auth migration guide
+├── QUICKSTART.md        # NEW - Quick setup
+├── TESTING_GUIDE.md     # NEW - Complete test suite
+└── AUTH_IMPLEMENTATION_SUMMARY.md  # NEW - Implementation details
 │
 └── scripts/             # Helper scripts
     ├── run.ps1          # Script pornire Windows
@@ -166,7 +183,10 @@ export EMAIL_PASSWORD=your_password
 export EMAIL_SERVER=smtp.gmail.com
 export EMAIL_PORT=587
 
-# Authentication
+# Authentication (REQUIRED)
+export JWT_SECRET="your-super-secret-key-at-least-32-characters-long"
+
+# Legacy support (optional)
 export UNIVERSAL_PASSWORD_HASH="$2a$12$your_production_hash"
 ```
 
@@ -203,33 +223,51 @@ Aplicația folosește **Flyway** pentru migrări în producție și **Hibernate 
 
 **Pentru detalii complete:** Vezi [guides/07-database-migrations.md](guides/07-database-migrations.md)
 
-## 🔐 Autentificare
+## 🔐 Autentificare - Sistem Nou Multi-User
 
-### Generare Hash BCrypt pentru Parola Universală
+### ⚡ Quick Setup
 
-**Metoda 1 - Folosind clasa utilitară:**
 ```bash
-# Editează src/main/java/.../utils/BCryptHashGenerator.java
-# Modifică parola în metoda main()
-# Apoi rulează:
-mvn compile exec:java -Dexec.mainClass="com.work.total_app.utils.BCryptHashGenerator"
+# 1. Setează JWT Secret
+export JWT_SECRET="your-super-secret-key-at-least-32-characters-long"
+
+# 2. Rulează migrarea DB
+psql -U postgres -d total_app < database/migration_auth_system.sql
+
+# 3. Creează primul user (vezi QUICKSTART.md)
 ```
 
-**Metoda 2 - În test:**
-```java
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+**Pentru setup complet:** Vezi **[QUICKSTART.md](QUICKSTART.md)** și **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)**
 
-@Test
-public void generatePasswordHash() {
-    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
-    String hash = encoder.encode("your_password");
-    System.out.println("Hash: " + hash);
-}
-```
+### 🎯 Funcționalități
 
-Copiază hash-ul în `application.properties`:
-```properties
-app.auth.universal-password-hash=$2a$12$generated_hash_here
+- ✅ **Multi-user** - Fiecare utilizator are propriul cont
+- ✅ **2FA prin email** - Activat automat după 6 încercări eșuate
+- ✅ **Rate limiting** - 10 încercări/15min pe IP, blocare 30 min după 10 eșecuri
+- ✅ **Email whitelist** - Codurile se trimit doar pe emailuri aprobate
+- ✅ **HttpOnly cookies** - Protecție XSS pentru refresh tokens
+- ✅ **IP tracking** - Fiecare sesiune are IP și User Agent
+- ✅ **Audit logging** - Toate acțiunile sunt logate
+
+### 📚 Documentație Completă
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Setup în 5 pași
+- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Ghid detaliat de migrare
+- **[guides/02-authentication-complete.md](guides/02-authentication-complete.md)** - API Reference complet
+- **[guides/03-admin-api.md](guides/03-admin-api.md)** - Admin endpoints
+- **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Test suite complet
+- **[AUTH_IMPLEMENTATION_SUMMARY.md](AUTH_IMPLEMENTATION_SUMMARY.md)** - Ce a fost implementat
+- **[FRONTEND_INTEGRATION_GUIDE.md](FRONTEND_INTEGRATION_GUIDE.md)** ⭐ - Ghid complet pentru Frontend
+- **[FRONTEND_SUMMARY.md](FRONTEND_SUMMARY.md)** ⭐ - Quick summary pentru FE Dev
+
+### 🧪 Test Rapid
+
+```bash
+# Login
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{"username": "admin", "password": "Admin123!"}'
 ```
 
 ## 📚 API Documentation
@@ -237,7 +275,8 @@ app.auth.universal-password-hash=$2a$12$generated_hash_here
 Documentație completă pentru fiecare endpoint în folder-ul `guides/`:
 
 ### API Endpoints
-- **[Authentication API](guides/01-authentication.md)** - Login, refresh token, JWT
+- **[Authentication API](guides/02-authentication-complete.md)** ⭐ NEW - Multi-user, 2FA, rate limiting
+- **[Admin API](guides/03-admin-api.md)** ⭐ NEW - User & email whitelist management
 - **[Tenants API](guides/02-tenants.md)** - CRUD, import Excel, bulk delete
 - **[Buildings API](guides/03-buildings.md)** - Clădiri, rooms, rental spaces
 - **[Files API](guides/04-files.md)** - Upload, download, ZIP archives
@@ -456,7 +495,24 @@ Pentru întrebări sau probleme:
 
 ---
 
-**Versiune:** 1.0-SNAPSHOT  
+**Versiune:** 2.0-SNAPSHOT (with Advanced Authentication System)  
 **Java:** 21  
 **Spring Boot:** 3.5.3  
-**Ultima actualizare:** Octombrie 2025
+**Ultima actualizare:** Decembrie 2025
+
+---
+
+## 🆕 What's New in v2.0
+
+### 🔐 Advanced Authentication System
+
+- ✅ **Multi-user support** - Individual user accounts with username/password
+- ✅ **Two-Factor Authentication** - Email-based 2FA after 6 failed attempts
+- ✅ **Rate Limiting** - IP-based (10/15min) and user-based protection
+- ✅ **Email Whitelist** - Only approved emails receive verification codes
+- ✅ **HttpOnly Cookies** - XSS protection for refresh tokens
+- ✅ **Session Tracking** - IP address and User Agent for each session
+- ✅ **Comprehensive Audit Logging** - All authentication events logged
+- ✅ **Admin Management API** - User and whitelist administration
+
+**Migration:** See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for upgrading from v1.0

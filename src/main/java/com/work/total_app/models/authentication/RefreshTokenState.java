@@ -39,6 +39,9 @@ public class RefreshTokenState {
     private long version;                     // optimistic locking on refresh
 
     // optional metadata
-    @Column(length=45)   private String ip;
-    @Column(length=200)  private String userAgent;
+    @Column(length=45)
+    private String ipAddress;
+    
+    @Column(length=500)
+    private String userAgent;
 }
