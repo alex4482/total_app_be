@@ -40,6 +40,12 @@ public class LocalAuthService implements AuthenticationService {
 
     @Autowired
     private EmailVerificationService emailVerificationService;
+    
+    @Autowired
+    private com.work.total_app.services.security.LoginDelayService loginDelayService;
+    
+    @Autowired
+    private com.work.total_app.services.security.IpBlacklistService ipBlacklistService;
 
     private final BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
 
@@ -54,9 +60,23 @@ public class LocalAuthService implements AuthenticationService {
     public AuthTokens login(LoginRequest req, String ip, String userAgent) {
         String username = req.username();
         String password = req.password();
+        
+        // Verifică IP blacklist (atacuri persistente)
+        if (ipBlacklistService.isBlacklisted(ip)) {
+            long minutesLeft = ipBlacklistService.getMinutesUntilUnblock(ip);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, 
+                "IP-ul tău a fost blocat temporar din cauza activității suspicioase. " +
+                "Vei putea încerca din nou în " + minutesLeft + " minute.");
+        }
+        
+        // Aplică delay progresiv pentru a preveni brute-force
+        loginDelayService.applyDelay(ip);
 
         // Verifică rate limiting pe IP
         if (rateLimitService.isIpRateLimited(ip)) {
+            // Check if this IP should be blacklisted
+            ipBlacklistService.checkAndBlacklistIfNeeded(ip);
+            loginDelayService.recordFailedAttempt(ip);
             rateLimitService.recordLoginAttempt(username, ip, userAgent, false, "IP_RATE_LIMITED");
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, 
                 "Prea multe încercări eșuate. Te rugăm să aștepți 15 minute.");
@@ -85,6 +105,7 @@ public class LocalAuthService implements AuthenticationService {
 
         // Verifică parola
         if (!bCrypt.matches(password, user.getPasswordHash())) {
+            loginDelayService.recordFailedAttempt(ip);
             rateLimitService.recordLoginAttempt(username, ip, userAgent, false, "WRONG_PASSWORD");
             
             // Verifică dacă userul trebuie să folosească verificare prin email
@@ -103,7 +124,8 @@ public class LocalAuthService implements AuthenticationService {
                 "Prea multe încercări eșuate. Te rugăm să te autentifici cu cod trimis pe email.");
         }
 
-        // Login reușit
+        // Login reușit - resetează delay counters
+        loginDelayService.resetAttempts(ip);
         rateLimitService.recordLoginAttempt(username, ip, userAgent, true, null);
         return generateTokens(user.getId().toString(), ip, userAgent);
     }

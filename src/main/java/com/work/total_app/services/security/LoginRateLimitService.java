@@ -25,8 +25,9 @@ public class LoginRateLimitService {
     
     @Autowired
     private SecurityProperties securityProperties;
-    @Autowired
-    private SecurityProperties securityProperties;
+    
+    @Autowired(required = false)
+    private SecurityNotificationService securityNotificationService;
     
     /**
      * Înregistrează o încercare de login
@@ -53,15 +54,32 @@ public class LoginRateLimitService {
                     user.setRequiresEmailVerification(true);
                     log.warn("User {} requires email verification after {} failed attempts", 
                         username, user.getFailedLoginAttempts());
+                    
+                    // Trimite notificare email
+                    try {
+                        securityNotificationService.sendEmailVerificationRequiredNotification(
+                            user, ip, user.getFailedLoginAttempts());
+                    } catch (Exception e) {
+                        log.error("Failed to send email verification notification", e);
+                    }
                 }
                 
                 // Dacă a ajuns la maxIpAttempts, blochează contul pentru lockDurationMinutes
                 if (user.getFailedLoginAttempts() >= securityProperties.getRateLimit().getMaxIpAttempts()) {
+                    Instant lockedUntil = Instant.now().plus(Duration.ofMinutes(
+                        securityProperties.getRateLimit().getLockDurationMinutes()));
                     user.setAccountLocked(true);
-                    user.setAccountLockedUntil(Instant.now().plus(Duration.ofMinutes(
-                        securityProperties.getRateLimit().getLockDurationMinutes())));
+                    user.setAccountLockedUntil(lockedUntil);
                     log.warn("User {} account locked until {} after {} failed attempts", 
                         username, user.getAccountLockedUntil(), user.getFailedLoginAttempts());
+                    
+                    // Trimite notificare email
+                    try {
+                        securityNotificationService.sendAccountLockedNotification(
+                            user, ip, user.getFailedLoginAttempts(), lockedUntil);
+                    } catch (Exception e) {
+                        log.error("Failed to send account locked notification", e);
+                    }
                 }
                 
                 userRepository.save(user);
