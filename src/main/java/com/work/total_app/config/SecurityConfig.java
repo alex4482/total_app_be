@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -28,7 +29,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                     .contentSecurityPolicy(csp -> csp
                         .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"))
-                    .xssProtection(xss -> xss.headerValue("1; mode=block"))
+                    .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
                     .frameOptions(frame -> frame.deny())
                     .httpStrictTransportSecurity(hsts -> hsts
                         .includeSubDomains(true)
