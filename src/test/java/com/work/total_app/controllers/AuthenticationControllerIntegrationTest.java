@@ -10,12 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
@@ -36,10 +35,10 @@ class AuthenticationControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private AuthenticationService authService;
 
-    @MockBean
+    @MockitoBean
     private UserRepository userRepository;
 
     private User testUser;
@@ -62,7 +61,7 @@ class AuthenticationControllerIntegrationTest {
     void login_withValidCredentials_shouldReturn202AndSetCookie() throws Exception {
         // Given
         LoginRequest request = new LoginRequest("testuser", "password123");
-        when(authService.login(any(LoginRequest.class), anyString(), anyString()))
+        when(authService.login(any(), anyString(), anyString()))
             .thenReturn(mockTokens);
 
         // When & Then
@@ -81,7 +80,7 @@ class AuthenticationControllerIntegrationTest {
     void login_withInvalidCredentials_shouldReturn401() throws Exception {
         // Given
         LoginRequest request = new LoginRequest("testuser", "wrongpassword");
-        when(authService.login(any(LoginRequest.class), anyString(), anyString()))
+        when(authService.login(any(), anyString(), anyString()))
             .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credențiale invalide"));
 
         // When & Then
@@ -107,7 +106,7 @@ class AuthenticationControllerIntegrationTest {
     void register_withValidData_shouldReturn201() throws Exception {
         // Given
         RegisterUserRequest request = new RegisterUserRequest("newuser", "password123", "new@example.com");
-        when(authService.registerUser(any(RegisterUserRequest.class)))
+        when(authService.registerUser(any()))
             .thenReturn(testUser);
 
         // When & Then
@@ -151,7 +150,7 @@ class AuthenticationControllerIntegrationTest {
     void register_withExistingUsername_shouldReturn409() throws Exception {
         // Given
         RegisterUserRequest request = new RegisterUserRequest("existinguser", "password123", "new@example.com");
-        when(authService.registerUser(any(RegisterUserRequest.class)))
+        when(authService.registerUser(any()))
             .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Username-ul este deja folosit"));
 
         // When & Then
@@ -168,7 +167,7 @@ class AuthenticationControllerIntegrationTest {
         // Given
         RequestEmailCodeRequest request = new RequestEmailCodeRequest(
             "testuser", "password123", "test@example.com");
-        when(authService.requestEmailVerificationCode(any(RequestEmailCodeRequest.class), anyString()))
+        when(authService.requestEmailVerificationCode(any(), anyString()))
             .thenReturn(true);
 
         // When & Then
@@ -199,7 +198,7 @@ class AuthenticationControllerIntegrationTest {
         // Given
         LoginWithEmailRequest request = new LoginWithEmailRequest(
             "testuser", "password123", "test@example.com", "123456");
-        when(authService.loginWithEmail(any(LoginWithEmailRequest.class), anyString(), anyString()))
+        when(authService.loginWithEmail(any(), anyString(), anyString()))
             .thenReturn(mockTokens);
 
         // When & Then
@@ -229,7 +228,7 @@ class AuthenticationControllerIntegrationTest {
     @Test
     void refreshToken_withValidCookie_shouldReturn202() throws Exception {
         // Given
-        when(authService.refreshToken(any(RefreshTokenRequest.class)))
+        when(authService.refreshToken(any()))
             .thenReturn(new AuthTokens("new_access_token", "new_refresh_token", "session_id"));
 
         // When & Then
@@ -266,7 +265,7 @@ class AuthenticationControllerIntegrationTest {
         // Given
         ChangePasswordRequest request = new ChangePasswordRequest("oldpassword123", "newpassword123");
         when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(testUser));
-        doNothing().when(authService).changePassword(any(User.class), any(ChangePasswordRequest.class));
+        doNothing().when(authService).changePassword(any(), any());
 
         // Need to authenticate first - this test would require proper JWT setup
         // For now, we test the validation aspect

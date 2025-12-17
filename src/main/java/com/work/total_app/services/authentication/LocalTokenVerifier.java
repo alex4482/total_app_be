@@ -27,7 +27,7 @@ public class LocalTokenVerifier implements TokenVerifier {
     public Authentication verifyToken(String token) {
         try {
             Jws<Claims> jws = jwtService.parse(token);         // verifies signature + exp
-            Claims c = jws.getBody();
+            Claims c = jws.getPayload();
             String sid = c.get("sid", String.class);
             Instant iat = c.getIssuedAt() == null ? null : c.getIssuedAt().toInstant();
             if (sid == null || iat == null) throw new BadCredentialsException("missing sid/iat");

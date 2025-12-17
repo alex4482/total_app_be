@@ -1,14 +1,12 @@
 package com.work.total_app.models.tenant;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.work.total_app.models.service.Service;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * DTO for TenantRentalData with resolved includeInReport values.

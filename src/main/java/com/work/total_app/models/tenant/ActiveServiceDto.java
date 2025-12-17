@@ -1,6 +1,5 @@
 package com.work.total_app.models.tenant;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.work.total_app.models.service.Service;
 
 import java.util.Date;

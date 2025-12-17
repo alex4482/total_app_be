@@ -3,7 +3,6 @@ package com.work.total_app.controllers;
 import com.work.total_app.models.api.ApiResponse;
 import com.work.total_app.models.runtime_errors.NotFoundException;
 import com.work.total_app.models.runtime_errors.ValidationException;
-import com.work.total_app.models.stats.MonthCalculationsDto;
 import com.work.total_app.models.tenant.*;
 import com.work.total_app.services.TenantRentalService;
 import lombok.extern.log4j.Log4j2;
@@ -12,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Month;
 
 @Controller
 @RequestMapping("/tenant-rental-data")
