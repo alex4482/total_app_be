@@ -32,17 +32,23 @@ public class TotalAppApplication {
 		File externalLogConfigFile = new File(externalLogConfigPath);
 
 		try {
-			if (externalLogConfigFile.exists()) {
+			// Only attempt to load external config if file exists and is readable
+			if (externalLogConfigFile.exists() && externalLogConfigFile.canRead()) {
 				// Manually initialize Log4j2 from external file
 				Configurator.initialize(null, externalLogConfigPath);
 				log.info("Using external log4j2.properties from {}", externalLogConfigPath);
 			} else {
-				log.info("Using default log4j2.properties from classpath (resources)");
+				// Fall back to default configuration from classpath
+				// Log4j2 will automatically use log4j2.xml from resources
+				log.info("Using default log4j2 configuration from classpath (resources)");
 			}
 		}
-	catch (Exception e)
-	{
-		log.error("Error loading log4j2 configuration: {}", e.getMessage(), e);
-	}
+		catch (Exception e)
+		{
+			// If external config fails, Log4j2 will fall back to classpath config automatically
+			// Only log a warning, don't propagate the error
+			System.err.println("Warning: Could not load external log4j2 configuration: " + e.getMessage());
+			System.err.println("Falling back to default configuration from classpath");
+		}
 	}
 }
