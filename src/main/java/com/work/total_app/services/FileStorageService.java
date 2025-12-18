@@ -3,6 +3,7 @@ package com.work.total_app.services;
 import com.work.total_app.helpers.files.DatabaseHelper;
 import com.work.total_app.helpers.files.FileSystemHelper;
 import com.work.total_app.models.file.*;
+import com.work.total_app.validators.FileUploadValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,8 @@ public class FileStorageService {
     private DatabaseHelper databaseHelper;
     @Autowired
     private FileSystemHelper fileSystemHelper;
+    @Autowired
+    private FileUploadValidator fileUploadValidator;
 
     /**
      * Stage a batch of files in temporary storage associated with a batchId.
@@ -42,20 +45,30 @@ public class FileStorageService {
     public List<TempUploadDto> uploadTempBatch(UUID batchId, List<MultipartFile> files) throws Exception {
         List<TempUploadDto> out = new ArrayList<>();
         for (MultipartFile mf : files) {
+            // SECURITY: Validate file upload before processing
+            fileUploadValidator.validate(mf);
+            
+            // SECURITY: Sanitize filename to prevent path traversal and injection attacks
+            String sanitizedFilename = fileUploadValidator.sanitizeFilename(mf.getOriginalFilename());
+            
             byte[] data = mf.getBytes();
             String checksum = sha256(data);
-            // Write to temp folder on disk
-            FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, mf.getOriginalFilename(), data);
+            
+            // Write to temp folder on disk (using sanitized filename)
+            FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, sanitizedFilename, data);
 
             // Persist a TempUpload row pointing to temp path
             TempUpload tu = new TempUpload();
             tu.setBatchId(batchId);
-            tu.setOriginalFilename(mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "unnamed");
+            tu.setOriginalFilename(sanitizedFilename);
             tu.setContentType(mf.getContentType());
             tu.setSizeBytes(data.length);
             tu.setChecksum(checksum);
             tu.setTempPath(handle.tempPath().toString());
             databaseHelper.saveTemp(tu);
+
+            log.info("File uploaded successfully: {} ({} bytes, checksum: {})", 
+                    sanitizedFilename, data.length, checksum);
 
             out.add(new TempUploadDto(tu.getId(), tu.getBatchId(), tu.getOriginalFilename(),
                             tu.getContentType(), tu.getSizeBytes()));
@@ -214,21 +227,30 @@ public class FileStorageService {
      */
     @Transactional
     private TempUploadDto uploadTempSingle(UUID batchId, MultipartFile mf) throws Exception {
+        // SECURITY: Validate file upload before processing
+        fileUploadValidator.validate(mf);
+        
+        // SECURITY: Sanitize filename to prevent path traversal and injection attacks
+        String sanitizedFilename = fileUploadValidator.sanitizeFilename(mf.getOriginalFilename());
+        
         byte[] data = mf.getBytes();
         String checksum = sha256(data);
         
-        // Write to temp folder on disk
-        FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, mf.getOriginalFilename(), data);
+        // Write to temp folder on disk (using sanitized filename)
+        FileSystemHelper.TempHandle handle = fileSystemHelper.writeTemp(batchId, sanitizedFilename, data);
 
         // Persist a TempUpload row pointing to temp path
         TempUpload tu = new TempUpload();
         tu.setBatchId(batchId);
-        tu.setOriginalFilename(mf.getOriginalFilename() != null ? mf.getOriginalFilename() : "unnamed");
+        tu.setOriginalFilename(sanitizedFilename);
         tu.setContentType(mf.getContentType());
         tu.setSizeBytes(data.length);
         tu.setChecksum(checksum);
         tu.setTempPath(handle.tempPath().toString());
         databaseHelper.saveTemp(tu);
+
+        log.info("File uploaded successfully: {} ({} bytes, checksum: {})", 
+                sanitizedFilename, data.length, checksum);
 
         return new TempUploadDto(tu.getId(), tu.getBatchId(), tu.getOriginalFilename(),
                         tu.getContentType(), tu.getSizeBytes());

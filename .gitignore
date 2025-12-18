@@ -10,6 +10,14 @@ logs/
 *.env
 .env.*
 
+### Future plans and sensitive documentation ###
+future_plans/
+docs/SECURITY_ANALYSIS.md
+SECURITY_AUDIT_SUMMARY.md
+
+### Sensitive configuration ###
+**/application-secret.properties
+
 ### STS ###
 .apt_generated
 .classpath

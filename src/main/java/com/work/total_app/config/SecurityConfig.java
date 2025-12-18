@@ -25,15 +25,35 @@ public class SecurityConfig {
 
         return http
                 .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // Disabled for REST API (stateless JWT auth)
                 .headers(headers -> headers
+                    // Content Security Policy - restricts resource loading
                     .contentSecurityPolicy(csp -> csp
-                        .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"))
+                        .policyDirectives("default-src 'self'; " +
+                                "script-src 'self'; " +
+                                "style-src 'self' 'unsafe-inline'; " + // 'unsafe-inline' needed for dynamic styles
+                                "img-src 'self' data: https:; " +
+                                "font-src 'self'; " +
+                                "connect-src 'self'; " +
+                                "frame-ancestors 'none'; " +
+                                "base-uri 'self'; " +
+                                "form-action 'self'"))
+                    // X-XSS-Protection - legacy XSS protection (modern browsers use CSP)
                     .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                    // X-Frame-Options - prevents clickjacking
                     .frameOptions(frame -> frame.deny())
+                    // X-Content-Type-Options - prevents MIME type sniffing
+                    .contentTypeOptions(Customizer.withDefaults())
+                    // Referrer-Policy - controls referrer information
+                    .referrerPolicy(referrer -> referrer
+                        .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                    // HSTS - forces HTTPS
                     .httpStrictTransportSecurity(hsts -> hsts
                         .includeSubDomains(true)
+                        .preload(true) // Submit to browser preload lists
                         .maxAgeInSeconds(31536000)) // 1 year
+                    // Note: Permissions-Policy can be added via custom header writer if needed
+                    // .permissionsPolicy() is deprecated in Spring Security 6.4+
                 )
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
