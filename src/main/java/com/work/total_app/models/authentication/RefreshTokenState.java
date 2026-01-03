@@ -44,4 +44,7 @@ public class RefreshTokenState {
     
     @Column(length=500)
     private String userAgent;
+    
+    @Column(length=36)
+    private String userId;  // UUID of the user owning this session
 }

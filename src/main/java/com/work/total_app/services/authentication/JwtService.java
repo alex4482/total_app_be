@@ -1,5 +1,6 @@
 package com.work.total_app.services.authentication;
 
+import com.work.total_app.models.user.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -37,6 +38,30 @@ public class JwtService {
                 .claim("sid", sessionId)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(Duration.ofMinutes(accessTtlMinutes))))
+                .signWith(key)
+                .compact();
+    }
+    
+    /**
+     * Issues an access token with role-based expiration.
+     * 
+     * @param sessionId The session ID
+     * @param role The user role (determines expiration time)
+     * @return JWT access token
+     */
+    public String issueAccessWithRole(String sessionId, UserRole role) {
+        Instant now = Instant.now();
+        
+        // Get role-specific expiration time
+        long expirationMinutes = role.getSessionTimeoutMinutes();
+        
+        return Jwts.builder()
+                .id(UUID.randomUUID().toString())
+                .subject("user")
+                .claim("sid", sessionId)
+                .claim("role", role.name())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plus(Duration.ofMinutes(expirationMinutes))))
                 .signWith(key)
                 .compact();
     }

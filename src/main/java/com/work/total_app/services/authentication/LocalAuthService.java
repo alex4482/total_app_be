@@ -232,13 +232,22 @@ public class LocalAuthService implements AuthenticationService {
         if (now.isAfter(refreshTokenData.getExpiresAt()))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "refresh expired");
 
+        // Get user to determine role for JWT
+        User user = userRepository.findById(UUID.fromString(refreshTokenData.getUserId()))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not found"));
+        
+        // Check if user is deleted or disabled
+        if (user.isDeleted() || !user.isEnabled()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user account is disabled or deleted");
+        }
+        
         // If client resends the immediately-previous token (retry), allow once without rotating again
         if (hash.equals(refreshTokenData.getPreviousTokenHash())) {
             refreshTokenData.setPreviousTokenHash(null);
             tokenRepository.saveAndFlush(refreshTokenData);
 
             return new AuthTokens(
-                jwtService.issueAccess(refreshTokenData.getSessionId()),
+                jwtService.issueAccessWithRole(refreshTokenData.getSessionId(), user.getRole()),
                 null,
                 refreshTokenData.getSessionId()
             );
@@ -257,7 +266,7 @@ public class LocalAuthService implements AuthenticationService {
         tokenRepository.saveAndFlush(refreshTokenData);
 
         return new AuthTokens(
-            jwtService.issueAccess(refreshTokenData.getSessionId()), 
+            jwtService.issueAccessWithRole(refreshTokenData.getSessionId(), user.getRole()), 
             newRaw,
             refreshTokenData.getSessionId()
         );
@@ -349,9 +358,14 @@ public class LocalAuthService implements AuthenticationService {
         String raw = tokenService.randomToken(32);
         String hash = tokenService.sha256Hex(raw);
         Instant now = Instant.now();
+        
+        // Get user to determine role-based expiration
+        User user = userRepository.findById(UUID.fromString(userId))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         RefreshTokenState rt = new RefreshTokenState();
         rt.setSessionId(sessionId);
+        rt.setUserId(userId);
         rt.setTokenHash(hash);
         rt.setCreatedAt(now);
         rt.setRevokedAfter(Instant.EPOCH);
@@ -361,7 +375,7 @@ public class LocalAuthService implements AuthenticationService {
         rt.setUserAgent(userAgent);
         tokenRepository.save(rt);
 
-        String access = jwtService.issueAccess(sessionId);
+        String access = jwtService.issueAccessWithRole(sessionId, user.getRole());
         return new AuthTokens(access, raw, sessionId);
     }
 }

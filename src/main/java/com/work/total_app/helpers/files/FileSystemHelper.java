@@ -1,5 +1,6 @@
 package com.work.total_app.helpers.files;
 
+import com.work.total_app.config.StorageProperties;
 import com.work.total_app.models.file.OwnerRef;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ public class FileSystemHelper {
 
     @Autowired
     private PathResolver pathResolver;
+    
+    @Autowired
+    private StorageProperties storageProperties;
 
     /** Handle for a temp file written on disk. */
     public record TempHandle(Path tempPath) {}
@@ -31,7 +35,7 @@ public class FileSystemHelper {
      * Uses a sanitized stem derived from the original name and a random suffix for uniqueness.
      */
     public TempHandle writeTemp(UUID batchId, String originalName, byte[] data) throws IOException {
-        Path dir = Paths.get("/DATA/.TEMP", batchId.toString());
+        Path dir = Paths.get(storageProperties.getBaseDir(), ".TEMP", batchId.toString());
         Files.createDirectories(dir);
         Path tmp = Files.createTempFile(dir, sanitize(stripExtension(originalName)) + "-", ".part");
         Files.write(tmp, data, StandardOpenOption.TRUNCATE_EXISTING);

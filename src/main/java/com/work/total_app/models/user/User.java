@@ -48,11 +48,41 @@ public class User {
     @Column(nullable = false)
     private boolean requiresEmailVerification = false;
     
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role = UserRole.SUPERUSER;
+    
+    @Column
+    private Instant deletedAt;
+    
     @Column
     private Instant createdAt;
     
     @Column
     private Instant updatedAt;
+    
+    /**
+     * Checks if this user is soft deleted.
+     */
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+    
+    /**
+     * Soft delete this user.
+     */
+    public void softDelete() {
+        this.deletedAt = Instant.now();
+        this.enabled = false;
+    }
+    
+    /**
+     * Restore this soft-deleted user.
+     */
+    public void restore() {
+        this.deletedAt = null;
+        this.enabled = true;
+    }
     
     @PrePersist
     protected void onCreate() {
