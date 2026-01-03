@@ -10,7 +10,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,8 +46,9 @@ public class LocalAuthService implements AuthenticationService {
     
     @Autowired
     private com.work.total_app.services.security.IpBlacklistService ipBlacklistService;
-
-    private final BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Value("${app.jwt.refresh-ttl-days}")
     private long refreshDays;
@@ -104,7 +105,7 @@ public class LocalAuthService implements AuthenticationService {
         }
 
         // Verifică parola
-        if (!bCrypt.matches(password, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             loginDelayService.recordFailedAttempt(ip);
             rateLimitService.recordLoginAttempt(username, ip, userAgent, false, "WRONG_PASSWORD");
             
@@ -162,7 +163,7 @@ public class LocalAuthService implements AuthenticationService {
         }
 
         // Verifică parola
-        if (!bCrypt.matches(password, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             rateLimitService.recordLoginAttempt(username, ip, userAgent, false, "WRONG_PASSWORD");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credențiale invalide");
         }
@@ -195,7 +196,7 @@ public class LocalAuthService implements AuthenticationService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credențiale invalide"));
 
         // Verifică parola
-        if (!bCrypt.matches(password, user.getPasswordHash())) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credențiale invalide");
         }
 
@@ -317,7 +318,7 @@ public class LocalAuthService implements AuthenticationService {
         // Creează userul
         User user = new User();
         user.setUsername(req.username());
-        user.setPasswordHash(bCrypt.encode(req.password()));
+        user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setEmail(req.email());
         user.setEnabled(true);
         
@@ -334,7 +335,7 @@ public class LocalAuthService implements AuthenticationService {
     @Transactional
     public void changePassword(User user, ChangePasswordRequest req) {
         // Verifică parola veche
-        if (!bCrypt.matches(req.oldPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(req.oldPassword(), user.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Parola veche este incorectă");
         }
         
@@ -344,7 +345,7 @@ public class LocalAuthService implements AuthenticationService {
         }
         
         // Actualizează parola
-        user.setPasswordHash(bCrypt.encode(req.newPassword()));
+        user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         userRepository.save(user);
         
         log.info("Password changed for user: {}", user.getUsername());
